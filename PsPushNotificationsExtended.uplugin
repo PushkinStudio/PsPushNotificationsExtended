@@ -1,0 +1,26 @@
+{
+	"FileVersion" : 3,
+	"FriendlyName" : "PsPushNotificationsExtended",
+	"Version" : 1,
+	"VersionName" : "1.0",
+	"CreatedBy" : "Pushkin Studio",
+	"CreatedByURL" : "https://github.com/PushkinStudio/",
+	"EngineVersion" : "4.20.0",
+	"Description" : "Plugin for Unreal Engine 4 with extended push notifications service",
+	"Category" : "Game",
+	"CanContainContent" : false,
+
+	"Modules" :
+	[
+		{
+			"Name" : "PsPushNotificationsExtended",
+			"Type" : "Runtime",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms":
+			[
+				"IOS",
+				"Android"
+			]
+		}
+	]
+}
