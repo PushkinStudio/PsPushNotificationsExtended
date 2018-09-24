@@ -10,6 +10,7 @@
 #if PLATFORM_IOS
 
 @implementation PsActionArgIOS
+
 @synthesize title;
 @synthesize actionId;
 
@@ -21,6 +22,11 @@
 }
 
 @end
+
+//-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+NSString* PsNotificationsDataFileName = @"local_notification.action";
+NSString* PsNotificationActionFieldName = @"Action";
 
 @implementation PsPushNotificationsExtendedDelegate
 
@@ -45,17 +51,6 @@
 			{
 				[[UIApplication sharedApplication] registerForRemoteNotifications];
 
-//				UNNotificationAction* Action = [UNNotificationAction actionWithIdentifier: @"Action1"
-//					title: @"Action title" options: UNNotificationActionOptionNone];
-//				UNNotificationAction* Dismiss = [UNNotificationAction actionWithIdentifier: @"ActionDismiss"
-//					title: @"Action dismiss" options: UNNotificationActionOptionForeground];
-//				UNNotificationCategory* Category = [UNNotificationCategory categoryWithIdentifier: @"category1"
-//					actions: [NSArray arrayWithObjects: Action, Dismiss, nil]
-//					intentIdentifiers: {}
-//					options: UNNotificationCategoryOptionCustomDismissAction];
-//
-//				[center setNotificationCategories: [NSSet setWithObjects: Category, nil]];
-
 				NSLog(@"RequestAuthorizationWithOptions success");
 
 				int32 types = (int32)(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge);
@@ -68,33 +63,39 @@
 	}
 }
 
--(void) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (UNNotificationSoundName*) soundName andBadge: (NSNumber*) badgeNumber
 {
 	if (@available(iOS 10, *))
 	{
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 
-		UNMutableNotificationContent* Content = [[UNMutableNotificationContent alloc] init];
+		UNMutableNotificationContent* Content = [[[UNMutableNotificationContent alloc] init] autorelease];
 		Content.title = title;
 		Content.subtitle = subtitle;
 		Content.body = body;
-		Content.sound = UNNotificationSound.defaultSound;
-		Content.categoryIdentifier = category;//@"category1";
+		if (soundName && [soundName length] > 0)
+			Content.sound = [UNNotificationSound soundNamed: soundName];
+		else
+			Content.sound = UNNotificationSound.defaultSound;
+		if (badgeNumber && [badgeNumber intValue] > 0)
+			Content.badge = badgeNumber;
+
+		Content.categoryIdentifier = category;
 
 		// load image content
 		{
-			NSString *attachmentUrlString = imageURL;//[NSString stringWithFormat:@"%@", @"https://i05.fotocdn.net/s13/112/gallery_s/104/2345428847.jpg"];
+			NSString *attachmentUrlString = imageURL;
 			NSURL *url = [NSURL URLWithString:attachmentUrlString];
 			if (!url)
 			{
 				NSLog(@"scheduleLocalNotificationAtTime wrong url");
-				return;
+				return nil;
 			}
 			NSData *data = [NSData dataWithContentsOfURL:url];
 			if (!data)
 			{
 				NSLog(@"scheduleLocalNotificationAtTime wrong url data");
-				return;
+				return nil;
 			}
 
 			NSString *identifierName = @"image.jpg";
@@ -138,7 +139,11 @@
 				NSLog(@"scheduleLocalNotificationAtTime create request error: %@",error);
 			}
 		}];
+
+		return PushID;
 	}
+
+	return nil;
 }
 
 -(void) registerNotificationCategories: (NSString*) categoryName andActions: (NSArray<PsActionArgIOS*>*) actions
@@ -146,12 +151,12 @@
 	__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 	[center getNotificationCategoriesWithCompletionHandler:^(NSSet<UNNotificationCategory *> *categories){
 		NSMutableSet* newCategories = [categories mutableCopy];
-		NSMutableArray* actionsArray = [[NSMutableArray alloc] init];
+		NSMutableArray* actionsArray = [[[NSMutableArray alloc] init] autorelease];
 
 		for (PsActionArgIOS* Action in actions)
 		{
 			UNNotificationAction* actionObj = [UNNotificationAction actionWithIdentifier: Action.actionId
-				title: Action.title options: UNNotificationActionOptionNone];
+				title: Action.title options: UNNotificationActionOptionForeground];
 			[actionsArray addObject: actionObj];
 		}
 
@@ -169,22 +174,75 @@
 	didReceiveNotificationResponse:(UNNotificationResponse *)response
 	withCompletionHandler:(void (^)(void))completionHandler
 {
-	NSLog(@"didReceiveNotificationResponse performing push action");
+	NSLog(@"didReceiveNotificationResponse doing action push delegate callback %@", response.actionIdentifier);
 
-	FString ActionId(response.actionIdentifier);
-	FString URI;
-//	FFunctionGraphTask::CreateAndDispatchWhenReady([ActionId, URI]()
-	{
-		NSLog(@"didReceiveNotificationResponse doing action push delegate callback");
-
-		UPsPushNotificationsExtendedManager* Manager = UPsPushNotificationsExtendedManager::GetInstance();
-		if (Manager && Manager->IsValidLowLevel())
-		{
-			Manager->OnActionPerform.Broadcast(ActionId, URI);
-		}
-	}//, TStatId(), NULL, ENamedThreads::GameThread);
+	NSMutableDictionary* dict = [[[NSMutableDictionary alloc] init] autorelease];
+	[dict setObject: response.actionIdentifier forKey: PsNotificationActionFieldName];
+	[self saveToTemporaryFile: dict];
 
 	completionHandler();
+}
+
+-(void) clearAllLocalNotifications
+{
+	[[UNUserNotificationCenter currentNotificationCenter] removeAllPendingNotificationRequests];
+}
+
+-(void) clearLocalNotificationByIds: (NSArray<NSString*>*) ids
+{
+	[[UNUserNotificationCenter currentNotificationCenter] removePendingNotificationRequestsWithIdentifiers: ids];
+}
+
+-(NSString*) getLastActionId
+{
+	NSDictionary* dict = [self loadDictionaryFromTemporaryFile];
+	if (!dict)
+	{
+		return nil;
+	}
+
+	NSString* actionIdStr = (NSString*)dict[PsNotificationActionFieldName];
+	return actionIdStr;
+}
+
+-(void) saveToTemporaryFile: (NSDictionary*) dictionaryData
+{
+	NSString *tmpDirName = NSTemporaryDirectory();
+	NSError *localError = nil;
+
+	[[NSFileManager defaultManager] createDirectoryAtPath:tmpDirName withIntermediateDirectories:TRUE attributes:nil error: &localError];
+	if(localError)
+	{
+		NSLog(@"saveToTemporaryFile Error: %@", localError);
+		return;
+	}
+
+	NSString *fileURL = [tmpDirName stringByAppendingPathComponent: PsNotificationsDataFileName];
+	NSData *data = [NSKeyedArchiver archivedDataWithRootObject: dictionaryData];
+	if (!data)
+	{
+		return;
+	}
+
+	[data writeToFile:fileURL atomically:YES];
+	NSLog(@"saveToTemporaryFile saved: %@ to %@", dictionaryData, fileURL);
+}
+
+-(NSDictionary*) loadDictionaryFromTemporaryFile
+{
+	NSString *tmpDirName = NSTemporaryDirectory();
+	NSString *fileURL = [tmpDirName stringByAppendingPathComponent: PsNotificationsDataFileName];
+	NSData *data = [[NSFileManager defaultManager] contentsAtPath: fileURL];
+	if (!data)
+	{
+		NSLog(@"loadDictionaryFromTemporaryFile: failed!");
+		return nil;
+	}
+
+	NSLog(@"loadDictionaryFromTemporaryFile: %@ from %@", data, fileURL);
+
+	NSDictionary *dictionary = (NSDictionary*) [NSKeyedUnarchiver unarchiveObjectWithData:data];
+	return dictionary;
 }
 
 @end

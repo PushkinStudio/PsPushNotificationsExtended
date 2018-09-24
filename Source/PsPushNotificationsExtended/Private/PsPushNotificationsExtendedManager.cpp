@@ -67,12 +67,12 @@ void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString&
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::AddNotificationCategory"));
 
 #if PLATFORM_IOS
-	NSMutableArray* IOSActions = [[NSMutableArray alloc] init];
+	NSMutableArray* IOSActions = [[[NSMutableArray alloc] init] autorelease];
 	for (const FPsNotificationsAction& Action : Actions)
 	{
-		PsActionArgIOS* IOSAction = [[PsActionArgIOS alloc] initWithTitle:
-			 [NSString stringWithFString: Action.Title] andAction:
-			 [NSString stringWithFString: Action.ActionId]];
+		PsActionArgIOS* IOSAction = [[[PsActionArgIOS alloc] initWithTitle:
+			[NSString stringWithFString: Action.Title] andAction:
+			[NSString stringWithFString: Action.ActionId]] autorelease];
 		[IOSActions addObject: IOSAction];
 	}
 
@@ -81,20 +81,21 @@ void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString&
 #endif // PLATFORM_IOS
 }
 
-void UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
 {
 	FDateTime TargetTime = FDateTime::Now();
 	TargetTime += FTimespan::FromSeconds(SecondsFromNow);
 
-	SendLocalNotification(TargetTime, true, Notification);
+	return SendLocalNotification(TargetTime, true, Notification);
 }
 
-void UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::SendLocalNotification"));
 
+	FString PushIdStr;
 #if PLATFORM_IOS
-	NSDateComponents *dateComps = [[NSDateComponents alloc] init];
+	NSDateComponents *dateComps = [[[NSDateComponents alloc] init] autorelease];
 	[dateComps setDay : DateTime.GetDay()];
 	[dateComps setMonth : DateTime.GetMonth()];
 	[dateComps setYear : DateTime.GetYear()];
@@ -102,15 +103,65 @@ void UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime&
 	[dateComps setMinute : DateTime.GetMinute()];
 	[dateComps setSecond : DateTime.GetSecond()];
 
-	[[PsPushNotificationsExtendedDelegate sharedInstance] scheduleLocalNotificationAtTime: dateComps
+	NSString* PushId = [[PsPushNotificationsExtendedDelegate sharedInstance] scheduleLocalNotificationAtTime: dateComps
 		isLocalTime: bLocalTime
 		andTitle: [NSString stringWithFString: Notification.Title.ToString()]
 		andSubtitle: [NSString stringWithFString: Notification.Subtitle.ToString()]
 		andBody: [NSString stringWithFString: Notification.Body.ToString()]
 		andAlertAction: nil
 		andCategory: [NSString stringWithFString: Notification.Category]
-		andImageURL: [NSString stringWithFString: Notification.ContentURL]];
+		andImageURL: [NSString stringWithFString: Notification.ContentURL]
+		andSoundName:[NSString stringWithFString: Notification.SoundName]
+		andBadge: [NSNumber numberWithInteger: (NSInteger)Notification.BadgeNumber]];
 
+	if (PushId)
+	{
+		PushIdStr = FString(PushId);
+	}
+#endif // PLATFORM_IOS
+
+	return PushIdStr;
+}
+
+void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
+{
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::ClearAllLocalNotifications"));
+
+#if PLATFORM_IOS
+	[[PsPushNotificationsExtendedDelegate sharedInstance] clearAllLocalNotifications];
 #endif // PLATFORM_IOS
 }
-	
+
+void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
+{
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId"));
+
+#if PLATFORM_IOS
+	NSMutableArray* IOSNotificationsIds = [[[NSMutableArray alloc] init] autorelease];
+	for (const FString& NotificationId : NotificationsIds)
+	{
+		[IOSNotificationsIds addObject: [NSString stringWithFString: NotificationId]];
+	}
+
+	[[PsPushNotificationsExtendedDelegate sharedInstance] clearLocalNotificationByIds: IOSNotificationsIds];
+#endif // PLATFORM_IOS
+}
+
+FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
+{
+	FString OutValue;
+#if PLATFORM_IOS
+	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
+	{
+		NSString* lastActionId = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActionId];
+		if (lastActionId)
+		{
+			OutValue = FString(lastActionId);
+		}
+	}
+#endif // PLATFORM_IOS
+
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActionId: \"%s\""), *OutValue);
+
+	return OutValue;
+}
