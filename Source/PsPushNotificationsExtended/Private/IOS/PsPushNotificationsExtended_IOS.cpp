@@ -63,7 +63,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 	}
 }
 
--(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (UNNotificationSoundName*) soundName andBadge: (NSNumber*) badgeNumber
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber
 {
 	if (@available(iOS 10, *))
 	{
@@ -243,6 +243,14 @@ NSString* PsNotificationActionFieldName = @"Action";
 
 	NSDictionary *dictionary = (NSDictionary*) [NSKeyedUnarchiver unarchiveObjectWithData:data];
 	return dictionary;
+}
+
+-(void) clearNotificationDictionaryData
+{
+	NSError *localError = nil;
+	NSString *tmpDirName = NSTemporaryDirectory();
+	NSString *fileURL = [tmpDirName stringByAppendingPathComponent: PsNotificationsDataFileName];
+	[[NSFileManager defaultManager] removeItemAtPath: fileURL error: &localError];
 }
 
 @end
