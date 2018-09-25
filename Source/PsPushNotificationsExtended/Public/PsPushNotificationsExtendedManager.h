@@ -63,4 +63,8 @@ public:
 	/// Gets last notification action id (use at start of the application to navigate user action)
 	UFUNCTION(BlueprintCallable)
 	FString GetLastNotificationActionId();
+
+	/// Clear last saved notification dictionary from the device
+	UFUNCTION(BlueprintCallable)
+	void ClearLastNotificationData();
 };

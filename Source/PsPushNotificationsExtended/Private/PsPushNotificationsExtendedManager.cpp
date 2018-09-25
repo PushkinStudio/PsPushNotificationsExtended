@@ -111,7 +111,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 		andAlertAction: nil
 		andCategory: [NSString stringWithFString: Notification.Category]
 		andImageURL: [NSString stringWithFString: Notification.ContentURL]
-		andSoundName:[NSString stringWithFString: Notification.SoundName]
+		andSound:[NSString stringWithFString: Notification.SoundName]
 		andBadge: [NSNumber numberWithInteger: (NSInteger)Notification.BadgeNumber]];
 
 	if (PushId)
@@ -164,4 +164,14 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActionId: \"%s\""), *OutValue);
 
 	return OutValue;
+}
+
+void UPsPushNotificationsExtendedManager::ClearLastNotificationData()
+{
+#if PLATFORM_IOS
+	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
+	{
+		[[PsPushNotificationsExtendedDelegate sharedInstance] clearNotificationDictionaryData];
+	}
+#endif // PLATFORM_IOS
 }

@@ -30,7 +30,7 @@ extern NSString* PsNotificationActionFieldName;
 -(void) requestAuthorization;
 
 // Schedule local notification on IOS
--(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (UNNotificationSoundName*) soundName andBadge: (NSNumber*) badgeNumber;
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber;
 
 // Register IOS notification category
 -(void) registerNotificationCategories: (NSString*) categoryName andActions: (NSArray<PsActionArgIOS*>*) actions;
@@ -49,6 +49,9 @@ extern NSString* PsNotificationActionFieldName;
 
 // Load dictionary data from a temporary file
 -(NSDictionary*) loadDictionaryFromTemporaryFile;
+
+// Clear saved notification data for the device
+-(void) clearNotificationDictionaryData;
 
 @end
 
