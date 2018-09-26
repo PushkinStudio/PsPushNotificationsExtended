@@ -59,7 +59,7 @@ struct FPsNotification
 	{}
 
 	FPsNotification(const FText& Title_, const FText& Subtitle_, const FText& Body_,
-		const FString& Category_, const FString& ContentURL_, bool bLocalContent_, uint32 BadgeNumber_, const FString& SoundName_)
+		const FString& Category_, const FString& ContentURL_, bool bLocalContent_, int32 BadgeNumber_, const FString& SoundName_)
 		: Title(Title_),
 		  Subtitle(Subtitle_),
 		  Body(Body_),

@@ -8,35 +8,28 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPsPushNotificationsExtended, Log, All);
 
-// Action perform delegate type declaration
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FPsOnActionPerformDelegate, FString, ActionId, FString, PushData);
-
 UCLASS()
 class UPsPushNotificationsExtendedManager : public UObject
 {
 	GENERATED_UCLASS_BODY()
 
 public:
-	/// Called when user activates some action from push notifications
-	UPROPERTY(BlueprintAssignable)
-	FPsOnActionPerformDelegate OnActionPerform;
-
-	/// Get instance of the manager
+	/** Get instance of the manager */
 	UFUNCTION(BlueprintCallable)
 	static UPsPushNotificationsExtendedManager* GetInstance();
 
-	/// Creates an instance of the class
+	/** Creates an instance of the class */
 	UFUNCTION(BlueprintCallable)
 	static void CreateInstance();
 
-	/// Destructor method
-	~UPsPushNotificationsExtendedManager() throw() override;
+	/** Destructor method */
+	~UPsPushNotificationsExtendedManager() override;
 
-	/// Requests authority for push notifications
+	/** Requests authority for push notifications */
 	UFUNCTION(BlueprintCallable)
 	void RequestPushNotifications();
 
-	/// Adds notifications cathegory
+	/** Adds notifications cathegory */
 	UFUNCTION(BlueprintCallable)
 	void AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions);
 
@@ -52,19 +45,19 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FString SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification);
 
-	/// Cleares all notifications
+	/** Cleares all notifications */
 	UFUNCTION(BlueprintCallable)
 	void ClearAllLocalNotifications();
 
-	/// Removes local notification with specified ID
+	/** Removes local notification with specified ID */
 	UFUNCTION(BlueprintCallable)
 	void ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds);
 
-	/// Gets last notification action id (use at start of the application to navigate user action)
+	/** Gets last notification action id (use at start of the application to navigate user action) */
 	UFUNCTION(BlueprintCallable)
 	FString GetLastNotificationActionId();
 
-	/// Clear last saved notification dictionary from the device
+	/** Clear last saved notification dictionary from the device */
 	UFUNCTION(BlueprintCallable)
 	void ClearLastNotificationData();
 };

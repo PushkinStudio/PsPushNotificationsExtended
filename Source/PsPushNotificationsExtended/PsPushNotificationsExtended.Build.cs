@@ -27,9 +27,7 @@ public class PsPushNotificationsExtended : ModuleRules
 					"SystemConfiguration",
 					"UIKit",
 					"Foundation",
-					"CoreGraphics",
 					"MobileCoreServices",
-					"StoreKit",
 					"CFNetwork",
 					"CoreData",
 					"CoreFoundation"

@@ -63,87 +63,152 @@ NSString* PsNotificationActionFieldName = @"Action";
 	}
 }
 
--(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber
 {
 	if (@available(iOS 10, *))
 	{
+		NSString* PushID = [NSUUID UUID].UUIDString;
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 
-		UNMutableNotificationContent* Content = [[[UNMutableNotificationContent alloc] init] autorelease];
+		__block UNMutableNotificationContent* Content = [[UNMutableNotificationContent alloc] init];
 		Content.title = title;
 		Content.subtitle = subtitle;
 		Content.body = body;
 		if (soundName && [soundName length] > 0)
+		{
 			Content.sound = [UNNotificationSound soundNamed: soundName];
+		}
 		else
+		{
 			Content.sound = UNNotificationSound.defaultSound;
+		}
 		if (badgeNumber && [badgeNumber intValue] > 0)
+		{
 			Content.badge = badgeNumber;
+		}
 
 		Content.categoryIdentifier = category;
 
 		// load image content
+		__block NSString *identifier = @"image.jpg";
+		NSURL *url = [NSURL URLWithString:imageURL];
+		if (url)
 		{
-			NSString *attachmentUrlString = imageURL;
-			NSURL *url = [NSURL URLWithString:attachmentUrlString];
-			if (!url)
-			{
-				NSLog(@"scheduleLocalNotificationAtTime wrong url");
-				return nil;
-			}
-			NSData *data = [NSData dataWithContentsOfURL:url];
-			if (!data)
-			{
-				NSLog(@"scheduleLocalNotificationAtTime wrong url data");
-				return nil;
-			}
-
-			NSString *identifierName = @"image.jpg";
-			if (url)
-			{
-				identifierName = [NSString stringWithFormat:@"file.%@",url.lastPathComponent];
-			}
-
-			NSString *identifier = identifierName;
-			NSString *tmpSubFolderName = [[NSProcessInfo processInfo] globallyUniqueString];
-
-			NSString *fileURLPath = NSTemporaryDirectory();
-			NSString *tmpSubFolderURL = [fileURLPath stringByAppendingPathComponent:tmpSubFolderName];
-			NSError *localError = nil;
-			[[NSFileManager defaultManager] createDirectoryAtPath:tmpSubFolderURL withIntermediateDirectories:TRUE attributes:nil error: &localError];
-			if(!localError)
-			{
-				NSString *fileURL = [tmpSubFolderURL stringByAppendingPathComponent:identifier];
-				[data writeToFile:fileURL atomically:YES];
-				UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier:identifier URL:[NSURL fileURLWithPath:fileURL] options:nil error:&localError];
-				Content.attachments = [NSArray arrayWithObjects: attachment, nil];
-				NSLog(@"scheduleLocalNotificationAtTime attachement assign");
-			}
-			else
-			{
-				NSLog(@"scheduleLocalNotificationAtTime localError %@", localError);
-			}
+			identifier = [NSString stringWithFormat:@"file.%@.%@", PushID, url.lastPathComponent];
 		}
 
-		NSCalendar *calendar = [NSCalendar autoupdatingCurrentCalendar];
-		UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger
-			triggerWithDateMatchingComponents:dateComponents repeats:NO];
-
-		NSString* PushID = [NSUUID UUID].UUIDString;
-		UNNotificationRequest* Request = [UNNotificationRequest requestWithIdentifier: PushID
-			content: Content
-			trigger: trigger];
-
-		[center addNotificationRequest: Request withCompletionHandler: ^(NSError *error) {
-			if (error != nil) {
-				NSLog(@"scheduleLocalNotificationAtTime create request error: %@",error);
+		if (bIsLocalResource || !url)
+		{
+			if (url)
+			{
+				NSError *localError = nil;
+				UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier:identifier URL:[NSURL fileURLWithPath:imageURL] options:nil error:&localError];
+				if(!localError)
+				{
+					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
+					NSLog(@"scheduleLocalNotificationAtTime local attachement assign");
+				}
+				else
+				{
+					NSLog(@"scheduleLocalNotificationAtTime error %@", localError);
+				}
 			}
-		}];
+
+			[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+		}
+		else
+		{
+			NSString *fileURLPath = NSTemporaryDirectory();
+			fileURLPath = [fileURLPath stringByAppendingPathComponent: @"NotificationsContent"];
+			NSString *fileURL = [fileURLPath stringByAppendingPathComponent: identifier];
+
+			NSLog(@"scheduleLocalNotificationAtTime remote content download");
+			NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: url
+				completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+
+				NSLog(@"scheduleLocalNotificationAtTime downloadTaskWithURL %@", location);
+
+				if (error)
+				{
+					NSLog(@"scheduleLocalNotificationAtTime error %@", error);
+					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+					return;
+				}
+
+				if (!location)
+				{
+					NSLog(@"scheduleLocalNotificationAtTime location is nil");
+					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+					return;
+				}
+
+				NSError *localError = nil;
+
+				NSString* directory = [fileURL stringByDeletingLastPathComponent];
+				NSLog(@"scheduleLocalNotificationAtTime file does not exists, creating dir %@", directory);
+
+				[[NSFileManager defaultManager] createDirectoryAtPath:directory withIntermediateDirectories:TRUE attributes:nil error: &localError];
+				if(localError)
+				{
+					NSLog(@"scheduleLocalNotificationAtTime: %@", localError);
+					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+					return;
+				}
+						
+				[[NSFileManager defaultManager] moveItemAtPath: [location path] toPath: fileURL error: &localError];
+					if(localError)
+				{
+					NSLog(@"scheduleLocalNotificationAtTime can not move file: %@", localError);
+					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+					return;
+				}
+
+				// Creating attachement
+				UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier:identifier URL:[NSURL fileURLWithPath: fileURL] options:nil error: &localError];
+				if (localError)
+				{
+					NSLog(@"scheduleLocalNotificationAtTime remote attachement assign error %@", localError);
+					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+					return;
+				}
+
+				Content.attachments = [NSArray arrayWithObjects: attachment, nil];
+				[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+
+				NSLog(@"scheduleLocalNotificationAtTime remote attachement assign success");
+			}];
+
+			[task resume];
+		}
 
 		return PushID;
 	}
 
 	return nil;
+}
+
+-(void) scheduleLocalPushRequestWithId: (NSString*) pushId atTime: (NSDateComponents*) dateComponents andContent: (UNMutableNotificationContent*) content
+{
+	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+
+	NSCalendar *calendar = [NSCalendar autoupdatingCurrentCalendar];
+	UNCalendarNotificationTrigger* trigger = [UNCalendarNotificationTrigger
+		triggerWithDateMatchingComponents:dateComponents repeats:NO];
+
+	UNNotificationRequest* Request = [UNNotificationRequest requestWithIdentifier: pushId
+		content: content
+		trigger: trigger];
+
+	[center addNotificationRequest: Request withCompletionHandler: ^(NSError *error) {
+		if (error != nil)
+		{
+			NSLog(@"scheduleLocalPushRequestWithId create request error: %@",error);
+		}
+		else
+		{
+			NSLog(@"scheduleLocalPushRequestWithId create request success");
+		}
+	}];
 }
 
 -(void) registerNotificationCategories: (NSString*) categoryName andActions: (NSArray<PsActionArgIOS*>*) actions

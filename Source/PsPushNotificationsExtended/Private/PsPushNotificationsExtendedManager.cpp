@@ -42,7 +42,7 @@ UPsPushNotificationsExtendedManager::UPsPushNotificationsExtendedManager(const F
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager created"));
 }
 
-UPsPushNotificationsExtendedManager::~UPsPushNotificationsExtendedManager() throw()
+UPsPushNotificationsExtendedManager::~UPsPushNotificationsExtendedManager()
 {
 	if (PushNotificationsExtendedManagerInstance != this)
 	{
@@ -111,6 +111,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 		andAlertAction: nil
 		andCategory: [NSString stringWithFString: Notification.Category]
 		andImageURL: [NSString stringWithFString: Notification.ContentURL]
+		isLocal: Notification.bLocalContent
 		andSound:[NSString stringWithFString: Notification.SoundName]
 		andBadge: [NSNumber numberWithInteger: (NSInteger)Notification.BadgeNumber]];
 

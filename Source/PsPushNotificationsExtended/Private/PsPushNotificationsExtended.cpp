@@ -8,10 +8,6 @@
 void FPsPushNotificationsExtended::StartupModule()
 {
 	// Creating Push manager on startup
-//	UClass* ManagerClass = UPsPushNotificationsExtendedManager::StaticClass();
-//	Manager = NewObject<UPsPushNotificationsExtendedManager>(GetTransientPackage(), ManagerClass);
-//	Manager->SetFlags(RF_Standalone);
-//	Manager->AddToRoot();
 	UPsPushNotificationsExtendedManager::CreateInstance();
 	Manager = UPsPushNotificationsExtendedManager::GetInstance();
 }
