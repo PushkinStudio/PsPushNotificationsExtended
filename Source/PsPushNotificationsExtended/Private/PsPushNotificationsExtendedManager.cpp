@@ -7,6 +7,10 @@
 #if PLATFORM_IOS
 #include "IOS/PsPushNotificationsExtended_IOS.h"
 #endif // PLATFORM_IOS
+#if PLATFORM_ANDROID
+#include "Android/PsPushNotificationsExtendedJavaWrapper.h"
+#endif // PLATFORM_ANDROID
+
 
 DEFINE_LOG_CATEGORY(LogPsPushNotificationsExtended);
 
@@ -46,7 +50,7 @@ UPsPushNotificationsExtendedManager::~UPsPushNotificationsExtendedManager()
 {
 	if (PushNotificationsExtendedManagerInstance != this)
 	{
-		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("UPsPushNotificationsExtendedManager another manager instance have to be destroyed"));
+		UE_LOG(LogPsPushNotificationsExtended, Warning, TEXT("UPsPushNotificationsExtendedManager another manager instance have to be destroyed"));
 		return;
 	}
 
@@ -60,6 +64,9 @@ void UPsPushNotificationsExtendedManager::RequestPushNotifications()
 #if PLATFORM_IOS
 	[[PsPushNotificationsExtendedDelegate sharedInstance] requestAuthorization];
 #endif // PLATFORM_IOS
+#if PLATFORM_ANDROID
+	FPsPushNotificationsExtendedJavaWrapper::Init();
+#endif //PLATFORM_ANDROID
 }
 
 void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
@@ -120,7 +127,9 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 		PushIdStr = FString(PushId);
 	}
 #endif // PLATFORM_IOS
-
+#if PLATFORM_ANDROID
+	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), Notification.Category);
+#endif // PLATFORM_ANDROID
 	return PushIdStr;
 }
 
