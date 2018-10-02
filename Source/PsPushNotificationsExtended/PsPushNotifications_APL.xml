@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+	<trace enable="true"/>
+
+	<androidManifestUpdates>
+		<addPermission android:name="android.permission.INTERNET"/>
+		<addPermission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
+
+		<setElement result="PsLocalNotificationsExtendedReceiver" value="receiver" />
+		<addAttribute tag="$PsLocalNotificationsExtendedReceiver" name="android:name" value="com.epicgames.ue4.PsLocalNotificationsExtendedReceiver" />
+		<addAttribute tag="$PsLocalNotificationsExtendedReceiver" name="android:exported" value="true" />
+		<addElement tag="application" name="PsLocalNotificationsExtendedReceiver" />
+	</androidManifestUpdates>
+
+	<prebuildCopies>
+		<copyFile src="$S(PluginDir)/Java/PsLocalNotificationsExtendedReceiver.java" dst="$S(BuildDir)/src/com/epicgames/ue4/PsLocalNotificationsExtendedReceiver.java" />
+	</prebuildCopies>
+
+	<gameActivityImportAdditions>
+		<insert>
+			import android.util.Log;
+			import android.app.NotificationManager;
+			import android.app.NotificationChannel;
+		</insert>
+	</gameActivityImportAdditions>
+
+	<proguardAdditions>
+		<insert>
+			-keep class com.epicgames.ue4.PsLocalNotificationsExtendedReceiver {
+				public *;
+			}
+		</insert>
+	</proguardAdditions>
+
+	<gameActivityClassAdditions>
+		<insert>
+
+			public static final String PS_PUSH_NOTIFICATIONS_CHANNEL_ID = "PS_PUSH_EXTENDED_CHANNEL_01";
+
+			public void PsPushNotificationsExtended_Init(String channelId, String channelName, String channelDescription)
+			{
+				if (android.os.Build.VERSION.SDK_INT >= 26)
+				{
+					NotificationManager NotifManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+					String newChannelId = GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID;
+					int importance = NotificationManager.IMPORTANCE_DEFAULT;
+
+					NotificationChannel notifChannel = new NotificationChannel(newChannelId, channelName, importance);
+					notifChannel.setDescription(channelDescription);
+
+					NotifManager.createNotificationChannel(notifChannel);
+					Log.debug("PsPushNotificationsExtended::Init: " + newChannelId + " " + channelName);
+				}
+			}
+
+			public String PsPushNotificationsExtended_LocalNotificationScheduleAtTime(String targetDateTime, boolean localTime, String title, String body, String action, String activationEvent) 
+			{
+				int notificationID = LocalNotificationGetID();
+
+				// Create callback for PendingIntent
+				Intent notificationIntent = new Intent(this, PsLocalNotificationsExtendedReceiver.class);
+
+				// Add user-provided data
+				notificationIntent.putExtra("local-notification-ID", notificationID);
+				notificationIntent.putExtra("local-notification-title", title);
+				notificationIntent.putExtra("local-notification-body", body);
+				notificationIntent.putExtra("local-notification-action", action);
+				notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
+
+				// Designate the callback as a PendingIntent
+				PendingIntent pendingIntent = PendingIntent.getBroadcast(this, notificationID, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+				TimeZone targetTimeZone = TimeZone.getTimeZone("UTC");
+
+				if (localTime)
+				{
+					targetTimeZone = TimeZone.getDefault();
+				}
+
+				DateFormat targetDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				targetDateFormat.setTimeZone(targetTimeZone);
+
+				Date targetDate = new Date();
+
+				try 
+				{
+					targetDate = targetDateFormat.parse(targetDateTime);
+				}
+				catch (ParseException e) 
+				{
+					e.printStackTrace();
+					return String.valueOf(0);
+				}
+
+				Date currentDate = new Date();
+
+				long msDiff = targetDate.getTime() - currentDate.getTime();
+
+				long futureTimeInMillis = SystemClock.elapsedRealtime() + msDiff;//Calculate the time to run the callback
+				AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+
+				//Schedule the operation by using AlarmService
+				alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, futureTimeInMillis, pendingIntent);
+
+				Log.debug("PsPushNotificationsExtended::LocalNotificationsScheduleAtTime: " + targetDateTime + " local: " + localTime + " FT: " + msDiff);
+
+				return String.valueOf(notificationID);
+			}
+
+			public void PsPushNotificationsExtended_LocalNotificationClearAll()
+			{
+			}
+
+			public void PsPushNotificationsExtended_LocalNotificationClearById(int notificationId)
+			{
+			}
+
+		</insert>
+	</gameActivityClassAdditions>
+
+</root>
