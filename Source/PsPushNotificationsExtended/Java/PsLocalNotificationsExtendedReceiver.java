@@ -52,6 +52,31 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			.setContentText(details)
 			.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
 
+		// Checking action buttons
+		for (int i = 0;;i++)
+		{
+			String actionTitleExtraTag = "local-notification-cateroty-action-" + i + "-title";
+			String actionIdExtraTag = "local-notification-cateroty-action-" + i + "-id";
+			String actionTitle = intent.getStringExtra(actionTitleExtraTag);
+			String actionId = intent.getStringExtra(actionIdExtraTag);
+			if (actionTitle == null || actionId == null || actionTitle.length() == 0 || actionId.length() == 0)
+			{
+				break;
+			}
+
+			Intent notificationActionIntent = new Intent(context, PsLocalNotificationsExtendedActionReceiver.class);
+//			notificationActionIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+			notificationActionIntent.putExtra("local-notification-ID", notificationID);
+			notificationActionIntent.putExtra("local-notification-action", action);
+			notificationActionIntent.putExtra("local-notification-activationEvent", activationEvent);
+			notificationActionIntent.putExtra("local-notification-activationAction", actionId);
+			notificationActionIntent.setAction("com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast");
+
+//			PendingIntent actionPendingIntent = PendingIntent.getService(context, i, notificationActionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+			PendingIntent actionPendingIntent = PendingIntent.getBroadcast(context, 0, notificationActionIntent, 0);
+			builder.addAction(android.R.drawable.star_on, actionTitle, pendingNotificationIntent);
+		}
+
 		if (android.os.Build.VERSION.SDK_INT >= 26)
 		{
 			builder.setChannelId(GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID);
