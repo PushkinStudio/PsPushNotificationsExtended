@@ -6,18 +6,41 @@
 		<addPermission android:name="android.permission.INTERNET"/>
 		<addPermission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
 
+		<setElement result="IntentAction" value="action"/>
+		<addAttribute tag="$IntentAction" name="android:name" value="com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast" />
+
+		<setElement result="IntentCategory" value="category"/>
+		<addAttribute tag="$IntentCategory" name="android:name" value="android.intent.category.DEFAULT" />
+
+		<setElement result="IntentFilterElement" value="intent-filter"/>
+		<addElement tag="$IntentFilterElement" name="IntentAction" />
+		<addElement tag="$IntentFilterElement" name="IntentCategory" />
+
 		<setElement result="PsLocalNotificationsExtendedReceiver" value="receiver" />
 		<addAttribute tag="$PsLocalNotificationsExtendedReceiver" name="android:name" value="com.epicgames.ue4.PsLocalNotificationsExtendedReceiver" />
 		<addAttribute tag="$PsLocalNotificationsExtendedReceiver" name="android:exported" value="true" />
+		<addElement tag="$PsLocalNotificationsExtendedReceiver" name="IntentFilterElement" />
 		<addElement tag="application" name="PsLocalNotificationsExtendedReceiver" />
+
+		<addElement tag="$PsLocalNotificationsExtendedReceiver" value="IntentFilterElement" />
+
+		<setElement result="PsLocalNotificationsExtendedActionReceiver" value="receiver" />
+		<addAttribute tag="$PsLocalNotificationsExtendedActionReceiver" name="android:name" value="com.epicgames.ue4.PsLocalNotificationsExtendedActionReceiver" />
+		<addAttribute tag="$PsLocalNotificationsExtendedActionReceiver" name="android:exported" value="true" />
+		<addElement tag="application" name="PsLocalNotificationsExtendedActionReceiver" />
 	</androidManifestUpdates>
 
 	<prebuildCopies>
 		<copyFile src="$S(PluginDir)/Java/PsLocalNotificationsExtendedReceiver.java" dst="$S(BuildDir)/src/com/epicgames/ue4/PsLocalNotificationsExtendedReceiver.java" />
+		<copyFile src="$S(PluginDir)/Java/PsLocalNotificationsExtendedActionReceiver.java" dst="$S(BuildDir)/src/com/epicgames/ue4/PsLocalNotificationsExtendedActionReceiver.java" />
 	</prebuildCopies>
 
 	<gameActivityImportAdditions>
 		<insert>
+			import java.util.ArrayList;
+			import java.util.HashMap;
+			import java.util.Map;
+
 			import android.util.Log;
 			import android.app.NotificationManager;
 			import android.app.NotificationChannel;
@@ -27,6 +50,9 @@
 	<proguardAdditions>
 		<insert>
 			-keep class com.epicgames.ue4.PsLocalNotificationsExtendedReceiver {
+				public *;
+			}
+			-keep class com.epicgames.ue4.PsLocalNotificationsExtendedActionReceiver {
 				public *;
 			}
 		</insert>
@@ -39,6 +65,22 @@
 
 			public void PsPushNotificationsExtended_Init(String channelId, String channelName, String channelDescription)
 			{
+				Intent launchIntent = getIntent();
+				if (launchIntent != null)
+				{
+					Bundle extrasBundle = launchIntent.getExtras();
+					try
+					{
+						PsLocalNotificationLaunchActivationEvent = extrasBundle.get("localNotificationLaunchActivationEvent").toString();
+						PsLocalNotificationLaunchAction = extrasBundle.get("localNotificationLaunchActivationAction").toString();
+					}
+					catch(Exception e)
+					{
+						PsLocalNotificationLaunchActivationEvent = "";
+						PsLocalNotificationLaunchAction = "";
+					}
+				}
+
 				if (android.os.Build.VERSION.SDK_INT >= 26)
 				{
 					NotificationManager NotifManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -54,7 +96,7 @@
 				}
 			}
 
-			public String PsPushNotificationsExtended_LocalNotificationScheduleAtTime(String targetDateTime, boolean localTime, String title, String body, String action, String activationEvent) 
+			public String PsPushNotificationsExtended_LocalNotificationScheduleAtTime(String targetDateTime, boolean localTime, String title, String body, String action, String activationEvent, String categoryId, String contentURL)
 			{
 				int notificationID = LocalNotificationGetID();
 
@@ -67,6 +109,28 @@
 				notificationIntent.putExtra("local-notification-body", body);
 				notificationIntent.putExtra("local-notification-action", action);
 				notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
+
+				if (PsPushCategoriesMap != null)
+				{
+					ArrayList&lt;String&gt; Actions = (ArrayList&lt;String&gt;)PsPushCategoriesMap.get(categoryId);
+					if (Actions != null)
+					{
+						Log.debug("PsPushNotificationsExtended::LocalNotificationsScheduleAtTime Action size: " + Actions.size());
+						for (int i = 0; i &lt; Actions.size(); i++)
+						{
+							String ActionString = (String)Actions.get(i);
+							String[] parts = ActionString.split(":");
+							if (parts.length &gt; 1)
+							{
+								String extraTitleTag = "local-notification-cateroty-action-" + i + "-title";
+								notificationIntent.putExtra(extraTitleTag, parts[0]);
+								String extraIdTag = "local-notification-cateroty-action-" + i + "-id";
+								notificationIntent.putExtra(extraIdTag, parts[1]);
+								Log.debug("PsPushNotificationsExtended::LocalNotificationsScheduleAtTime Action added: " + parts[0] + " id: " + parts[1]);
+							}
+						}
+					}
+				}
 
 				// Designate the callback as a PendingIntent
 				PendingIntent pendingIntent = PendingIntent.getBroadcast(this, notificationID, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -108,12 +172,53 @@
 				return String.valueOf(notificationID);
 			}
 
+			private String PsLocalNotificationLaunchActivationEvent = "";
+			private String PsLocalNotificationLaunchAction = "";
+
+			public static HashMap&lt;String, ArrayList&lt;String&gt;&gt; PsPushCategoriesMap = null;
+
+			public void PsPushNotificationsExtended_LocalNotificationAddCategory(String CategoryId, String ActionName, String ActionId)
+			{
+				Log.debug("PsPushNotificationsExtended::LocalNotificationAddCategory: " + CategoryId + " Action: " + ActionName + " " + ActionId);
+				if (PsPushCategoriesMap == null)
+				{
+					PsPushCategoriesMap = new HashMap&lt;String, ArrayList&lt;String&gt;&gt;();
+				}
+
+				ArrayList&lt;String&gt; Actions = (ArrayList&lt;String&gt;)PsPushCategoriesMap.get(CategoryId);
+				String ActionString = ActionName + ":" + ActionId;
+				if (Actions != null)
+				{
+					Actions.add(ActionString);
+				}
+				else
+				{
+					Actions = new ArrayList&lt;String&gt;();
+					Actions.add(ActionString);
+					PsPushCategoriesMap.put(CategoryId, Actions);
+				}
+			}
+
 			public void PsPushNotificationsExtended_LocalNotificationClearAll()
 			{
+				ArrayList&lt;Integer&gt; idList = LocalNotificationGetIDList();
+
+				for (int curID : idList)
+				{
+					AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+					PendingIntent pendingIntent = PendingIntent.getBroadcast(this, curID, new Intent(this, PsLocalNotificationsExtendedReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
+					pendingIntent.cancel();
+					alarmManager.cancel(pendingIntent);
+				}
 			}
 
 			public void PsPushNotificationsExtended_LocalNotificationClearById(int notificationId)
 			{
+			}
+
+			public String PsPushNotificationsExtended_LastNotificationActionId()
+			{
+				return PsLocalNotificationLaunchAction;
 			}
 
 		</insert>

@@ -86,6 +86,9 @@ void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString&
 	[[PsPushNotificationsExtendedDelegate sharedInstance] registerNotificationCategories:
 	 	[NSString stringWithFString: Name] andActions: IOSActions];
 #endif // PLATFORM_IOS
+#if PLATFORM_ANDROID
+	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationAddCategory(Name, Actions);
+#endif // PLATFORM_ANDROID
 }
 
 FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
@@ -128,7 +131,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 	}
 #endif // PLATFORM_IOS
 #if PLATFORM_ANDROID
-	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), Notification.Category);
+	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), TEXT("ActivationEvent"), Notification.Category, Notification.ContentURL);
 #endif // PLATFORM_ANDROID
 	return PushIdStr;
 }
@@ -140,6 +143,9 @@ void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
 #if PLATFORM_IOS
 	[[PsPushNotificationsExtendedDelegate sharedInstance] clearAllLocalNotifications];
 #endif // PLATFORM_IOS
+#if PLATFORM_ANDROID
+	FPsPushNotificationsExtendedJavaWrapper::ClearAllNotifications();
+#endif // PLATFORM_ANDROID
 }
 
 void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
@@ -170,7 +176,9 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
 		}
 	}
 #endif // PLATFORM_IOS
-
+#if PLATFORM_ANDROID
+	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationAction();
+#endif // PLATFORM_ANDROID
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActionId: \"%s\""), *OutValue);
 
 	return OutValue;
