@@ -10,33 +10,28 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 
 public class PsLocalNotificationsExtendedActionReceiver extends BroadcastReceiver
 {
 	public void onReceive(Context context, Intent intent)
 	{
+		NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
 		int notificationID = intent.getIntExtra("local-notification-ID" , 0);
+
+		Log.d("onReceive", "NOID EXT: " + notificationID);
+
 		String activationEvent = intent.getStringExtra("local-notification-activationEvent");
-		String activationActionEvent = intent.getStringExtra("local-notification-activationActionEvent");
+		String activationActionEvent = intent.getStringExtra("local-notification-activationAction");
 
 		Intent notificationIntent = new Intent(context, GameActivity.class);
-		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		notificationIntent.putExtra("localNotificationID" , notificationID);
-		notificationIntent.putExtra("localNotificationAppLaunched" , true);
-		notificationIntent.putExtra("localNotificationLaunchActivationEvent", activationEvent);
+		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+		notificationIntent.putExtra("localNotificationAppLaunched", true);
 		notificationIntent.putExtra("localNotificationLaunchActivationAction", activationActionEvent);
+		notificationIntent.putExtra("localNotificationLaunchActivationEvent", activationEvent);
 
-		PendingIntent pendingNotificationIntent = PendingIntent.getActivity(context, notificationID, notificationIntent, 0);
-
-		NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
-			.setContentIntent(pendingNotificationIntent)
-			.setChannelId(GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID);
-
-		Notification notification = builder.build();
-
-		NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-		notificationManager.notify(notificationID, notification); 
-
-//		NotificationManagerCompat.from(context).cancel(notificationID, 0);
+		context.startActivity(notificationIntent);
 	}
 };
