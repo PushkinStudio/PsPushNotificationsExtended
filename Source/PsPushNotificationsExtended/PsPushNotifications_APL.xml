@@ -22,12 +22,22 @@
 		<addElement tag="$PsLocalNotificationsExtendedReceiver" name="IntentFilterElement" />
 		<addElement tag="application" name="PsLocalNotificationsExtendedReceiver" />
 
-		<addElement tag="$PsLocalNotificationsExtendedReceiver" value="IntentFilterElement" />
+		<setElement result="IntentAction2" value="action"/>
+		<addAttribute tag="$IntentAction2" name="android:name" value="com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast" />
+
+		<setElement result="IntentCategory2" value="category"/>
+		<addAttribute tag="$IntentCategory2" name="android:name" value="android.intent.category.CATEGORY_LAUNCHER" />
+
+		<setElement result="IntentFilterElement2" value="intent-filter"/>
+		<addElement tag="$IntentFilterElement2" name="IntentAction2" />
+		<addElement tag="$IntentFilterElement2" name="IntentCategory2" />
 
 		<setElement result="PsLocalNotificationsExtendedActionReceiver" value="receiver" />
 		<addAttribute tag="$PsLocalNotificationsExtendedActionReceiver" name="android:name" value="com.epicgames.ue4.PsLocalNotificationsExtendedActionReceiver" />
 		<addAttribute tag="$PsLocalNotificationsExtendedActionReceiver" name="android:exported" value="true" />
+		<addElement tag="$PsLocalNotificationsExtendedActionReceiver" name="IntentFilterElement2" />
 		<addElement tag="application" name="PsLocalNotificationsExtendedActionReceiver" />
+
 	</androidManifestUpdates>
 
 	<prebuildCopies>
@@ -69,6 +79,17 @@
 				if (launchIntent != null)
 				{
 					Bundle extrasBundle = launchIntent.getExtras();
+					if (extrasBundle != null)
+					{
+						for (String key : extrasBundle.keySet())
+						{
+							Object value = extrasBundle.get(key);
+							if (value != null)
+							{
+								Log.debug(String.format("Extras: %s %s (%s)", key, value.toString(), value.getClass().getName()));
+							}
+						}
+					}
 					try
 					{
 						PsLocalNotificationLaunchActivationEvent = extrasBundle.get("localNotificationLaunchActivationEvent").toString();
@@ -109,6 +130,7 @@
 				notificationIntent.putExtra("local-notification-body", body);
 				notificationIntent.putExtra("local-notification-action", action);
 				notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
+				notificationIntent.putExtra("local-notification-contentURL", contentURL);
 
 				if (PsPushCategoriesMap != null)
 				{
