@@ -13,6 +13,9 @@ import android.support.v4.app.NotificationCompat;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.HttpURLConnection;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.security.MessageDigest;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -72,6 +75,36 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			this.context = context;
 		}
 
+		public final String getMD5(final String s)
+		{
+			final String MD5 = "MD5";
+			try
+			{
+				// Create MD5 Hash
+				MessageDigest digest = java.security.MessageDigest.getInstance(MD5);
+				digest.update(s.getBytes());
+				byte messageDigest[] = digest.digest();
+
+				// Create Hex String
+				StringBuilder hexString = new StringBuilder();
+				for (byte aMessageDigest : messageDigest)
+				{
+					String h = Integer.toHexString(0xFF & aMessageDigest);
+					while (h.length() < 2)
+					{
+						h = "0" + h;
+					}
+					hexString.append(h);
+				}
+				return hexString.toString();
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
+			}
+			return "";
+		}
+
 		@Override
 		protected Bitmap doInBackground(String... params)
 		{
@@ -85,18 +118,57 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			contentURL = params[5];
 			buttonsContext = params[6];
 
-			if (contentURL != null && contentURL.length() > 0)
+			if (contentURL == null || contentURL.length() == 0)
+			{
+				return null;
+			}
+
+			String md5 = getMD5(contentURL);
+			if (md5 == null || md5.length() == 0)
+			{
+				return null;
+			}
+
+			File outputDir = context.getCacheDir();
+			String absFilePath = outputDir.getAbsolutePath() + "/" + md5;
+			Log.d("onReceive", "Cached file name: " + absFilePath);
+
+			File file = new File(absFilePath);
+			if(file.exists())
 			{
 				try
 				{
-					in = new URL(contentURL).openStream();
-					Bitmap bmp = BitmapFactory.decodeStream(in);
-					return bmp;
+					BitmapFactory.Options options = new BitmapFactory.Options();
+					options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+					Bitmap bitmap = BitmapFactory.decodeFile(absFilePath, options);
+					return bitmap;
+				}
+				catch (Exception e)
+				{
+					Log.d("onReceive", "Cached file not found: " + absFilePath);
+				}
+			}
+
+			try
+			{
+				in = new URL(contentURL).openStream();
+				Bitmap bmp = BitmapFactory.decodeStream(in);
+
+				Log.d("onReceive", "Save file to the cache: " + absFilePath);
+				try (FileOutputStream out = new FileOutputStream(absFilePath))
+				{
+					bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
 				}
 				catch (Exception e)
 				{
 					e.printStackTrace();
 				}
+
+				return bmp;
+			}
+			catch (Exception e)
+			{
+				e.printStackTrace();
 			}
 
 			return null;
@@ -107,26 +179,22 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 		{
 			super.onPostExecute(result);
 
-//		Intent notificationIntent = new Intent(context, GameActivity.class);
 			Intent notificationIntent = new Intent(context, PsLocalNotificationsExtendedActionReceiver.class);
-//			notificationIntent.putExtra("local-notification-ID", notificationID);
-//			notificationIntent.putExtra("local-notification-action", action);
-//			notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
+			notificationIntent.setAction("com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast");
+			notificationIntent.putExtra("local-notification-ID", notificationID);
+			notificationIntent.putExtra("local-notification-action", action);
+			notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
 			notificationIntent.setAction("com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast");
 
 			Log.d("onReceive", "NOID TASK: " + notificationID);
-		// launch if closed but resume if running
+			// launch if closed but resume if running
 			notificationIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-//		notificationIntent.putExtra("localNotificationID" , notificationID);
-//		notificationIntent.putExtra("localNotificationAppLaunched" , true);
-//		notificationIntent.putExtra("localNotificationLaunchActivationEvent", activationEvent);
 
 			int notificationIconID = context.getResources().getIdentifier("ic_notification", "drawable", context.getPackageName());
 			if (notificationIconID == 0)
 			{
 				notificationIconID = context.getResources().getIdentifier("icon", "drawable", context.getPackageName());
 			}
-//		PendingIntent pendingNotificationIntent = PendingIntent.getActivity(context, notificationID, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 			PendingIntent pendingNotificationIntent = PendingIntent.getBroadcast(context, notificationID, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 			NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
@@ -168,16 +236,15 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 
 						Intent notificationActionIntent = new Intent(context, PsLocalNotificationsExtendedActionReceiver.class);
 						notificationActionIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-						int actionNotificationID = notificationID;
+						int actionNotificationID = notificationID + 1000 + i;
 						notificationActionIntent.putExtra("local-notification-ID", actionNotificationID);
 						notificationActionIntent.putExtra("local-notification-action", action);
 						notificationActionIntent.putExtra("local-notification-activationEvent", activationEvent);
 						notificationActionIntent.putExtra("local-notification-activationAction", actionId);
 						notificationActionIntent.setAction("com.my.PsLocalNotificationsExtendedActionReceiver.Broadcast");
 
-//			PendingIntent actionPendingIntent = PendingIntent.getService(context, i, notificationActionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 						PendingIntent actionPendingIntent = PendingIntent.getBroadcast(context, actionNotificationID, notificationActionIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-						builder.addAction(android.R.drawable.star_on, actionTitle, pendingNotificationIntent);
+						builder.addAction(android.R.drawable.star_on, actionTitle, actionPendingIntent);
 					}
 				}
 			}

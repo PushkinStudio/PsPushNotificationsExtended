@@ -8,20 +8,16 @@
 void FPsPushNotificationsExtended::StartupModule()
 {
 	// Creating Push manager on startup
-	UPsPushNotificationsExtendedManager::CreateInstance();
-	Manager = UPsPushNotificationsExtendedManager::GetInstance();
 }
 
 void FPsPushNotificationsExtended::ShutdownModule()
 {
 	// Shuttin down Push manager
-	if (!GExitPurge)
+	if (!GExitPurge && UPsPushNotificationsExtendedManager::GetInstance())
 	{
 		// if GExitPurge - manager is already removed
-		Manager->RemoveFromRoot();
+		UPsPushNotificationsExtendedManager::GetInstance()->RemoveFromRoot();
 	}
-
-	Manager = nullptr;
 }
 
 IMPLEMENT_MODULE(FPsPushNotificationsExtended, PsPushNotificationsExtended)

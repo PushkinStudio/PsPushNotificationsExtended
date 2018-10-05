@@ -16,11 +16,13 @@ public class PsLocalNotificationsExtendedActionReceiver extends BroadcastReceive
 {
 	public void onReceive(Context context, Intent intent)
 	{
+		Intent it = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+		context.sendBroadcast(it);
+
 		NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
 		int notificationID = intent.getIntExtra("local-notification-ID" , 0);
 
-		Log.d("onReceive", "NOID EXT: " + notificationID);
 
 		String activationEvent = intent.getStringExtra("local-notification-activationEvent");
 		String activationActionEvent = intent.getStringExtra("local-notification-activationAction");
@@ -28,6 +30,7 @@ public class PsLocalNotificationsExtendedActionReceiver extends BroadcastReceive
 		Intent notificationIntent = new Intent(context, GameActivity.class);
 		notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
+		Log.d("onReceive", "NOID EXT: " + notificationID + " " + activationActionEvent);
 		notificationIntent.putExtra("localNotificationAppLaunched", true);
 		notificationIntent.putExtra("localNotificationLaunchActivationAction", activationActionEvent);
 		notificationIntent.putExtra("localNotificationLaunchActivationEvent", activationEvent);

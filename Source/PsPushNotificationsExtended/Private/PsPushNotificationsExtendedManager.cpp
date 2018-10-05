@@ -18,6 +18,11 @@ static UPsPushNotificationsExtendedManager* PushNotificationsExtendedManagerInst
 
 UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::GetInstance()
 {
+	if (!PushNotificationsExtendedManagerInstance)
+	{
+		CreateInstance();
+	}
+
 	return PushNotificationsExtendedManagerInstance;
 }
 

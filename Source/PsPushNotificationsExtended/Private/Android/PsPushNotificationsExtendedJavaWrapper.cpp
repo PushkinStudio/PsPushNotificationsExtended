@@ -3,6 +3,7 @@
 #include "../PsPushNotificationsExtendedPrivatePCH.h"
 #include "Android/PsPushNotificationsExtendedJavaWrapper.h"
 #include "PsPushNotificationsExtendedManager.h"
+#include "PsPushNotificationsExtendedSettings.h"
 
 #if USE_ANDROID_JNI
 
@@ -32,9 +33,9 @@ void FPsPushNotificationsExtendedJavaWrapper::Init()
 		// Get action method
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActionId = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LastNotificationActionId", "()Ljava/lang/String;", false);
 
-		const FString ChannelId = TEXT("");
-		const FString ChannelName = TEXT("Channel Name");
-		const FString ChannelDescription = TEXT("Channel Description");
+		const FString ChannelId = GetDefault<UPsPushNotificationsExtendedSettings>()->PsPushNotificationsAndroidChannelID;
+		const FString ChannelName = GetDefault<UPsPushNotificationsExtendedSettings>()->PsPushNotificationsAndroidChannelName;
+		const FString ChannelDescription = GetDefault<UPsPushNotificationsExtendedSettings>()->PsPushNotificationsAndroidChannelDescription;
 
 		jstring JChannelId = Env->NewStringUTF(TCHAR_TO_UTF8(*ChannelId));
 		jstring JChannelName = Env->NewStringUTF(TCHAR_TO_UTF8(*ChannelName));

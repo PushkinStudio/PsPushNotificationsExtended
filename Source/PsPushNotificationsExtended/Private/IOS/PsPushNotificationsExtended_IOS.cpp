@@ -118,7 +118,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 		}
 		else
 		{
-			NSString *fileURLPath = NSTemporaryDirectory();
+			NSString *fileURLPath = NSCachesDirectory();
 			fileURLPath = [fileURLPath stringByAppendingPathComponent: @"NotificationsContent"];
 			NSString *fileURL = [fileURLPath stringByAppendingPathComponent: identifier];
 
