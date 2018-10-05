@@ -12,6 +12,4 @@ public:
 	// End of IModuleInterface impl
 
 private:
-	// Push manager pointer
-	class UPsPushNotificationsExtendedManager* Manager;
 };

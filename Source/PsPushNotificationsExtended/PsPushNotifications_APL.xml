@@ -107,6 +107,17 @@
 					NotificationManager NotifManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
 					String newChannelId = GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID;
+					if (channelId != null &amp;&amp; channelId.length() &gt; 0)
+					{
+						newChannelId = channelId;
+					}
+
+					String newChannelName = "Default";
+					if (channelName != null &amp;&amp; channelName.length() &gt; 0)
+					{
+						newChannelName = channelName;
+					}
+
 					int importance = NotificationManager.IMPORTANCE_DEFAULT;
 
 					NotificationChannel notifChannel = new NotificationChannel(newChannelId, channelName, importance);
