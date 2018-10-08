@@ -31,6 +31,9 @@ void FPsPushNotificationsExtendedJavaWrapper::Init()
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearAll = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationClearAll", "()V", false);
 
 		// Get action method
+		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActivationCode = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LastNotificationActivationCode", "()Ljava/lang/String;", false);
+
+		// Get action method
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActionId = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LastNotificationActionId", "()Ljava/lang/String;", false);
 
 		const FString ChannelId = GetDefault<UPsPushNotificationsExtendedSettings>()->PsPushNotificationsAndroidChannelID;
@@ -116,6 +119,25 @@ void FPsPushNotificationsExtendedJavaWrapper::ClearAllNotifications()
 	}
 }
 
+FString FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationActivationCode()
+{
+	FString ActivationCode;
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
+	{
+		jstring JActivationCode = (jstring)FJavaWrapper::CallObjectMethod(Env, FJavaWrapper::GameActivityThis, FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActivationCode);
+		
+		if (JActivationCode)
+		{
+			const char *nativeString = Env->GetStringUTFChars(JActivationCode, 0);
+			if (nativeString)
+			{
+				ActivationCode = FString(nativeString);
+			}
+		}
+	}
+	return ActivationCode;
+}
+
 FString FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationAction()
 {
 	FString ActionId;
@@ -140,6 +162,7 @@ jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_L
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationAddActionToCategory;
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearAll;
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearById;
+jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActivationCode;
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActionId;
 
 #endif // USE_ANDROID_JNI

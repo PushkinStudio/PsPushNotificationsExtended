@@ -249,6 +249,11 @@
 			{
 			}
 
+			public String PsPushNotificationsExtended_LastNotificationActivationCode()
+			{
+				return PsLocalNotificationLaunchActivationEvent;
+			}
+
 			public String PsPushNotificationsExtended_LastNotificationActionId()
 			{
 				return PsLocalNotificationLaunchAction;

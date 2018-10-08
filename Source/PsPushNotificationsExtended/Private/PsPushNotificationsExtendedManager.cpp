@@ -128,7 +128,8 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 		andImageURL: [NSString stringWithFString: Notification.ContentURL]
 		isLocal: Notification.bLocalContent
 		andSound:[NSString stringWithFString: Notification.SoundName]
-		andBadge: [NSNumber numberWithInteger: (NSInteger)Notification.BadgeNumber]];
+		andBadge: [NSNumber numberWithInteger: (NSInteger)Notification.BadgeNumber]
+		andActivationCode: [NSString stringWithFString: Notification.ActivationCode]];
 
 	if (PushId)
 	{
@@ -136,7 +137,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 	}
 #endif // PLATFORM_IOS
 #if PLATFORM_ANDROID
-	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), TEXT("ActivationEvent"), Notification.Category, Notification.ContentURL);
+	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), Notification.ActivationCode, Notification.Category, Notification.ContentURL);
 #endif // PLATFORM_ANDROID
 	return PushIdStr;
 }
@@ -166,6 +167,27 @@ void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TA
 
 	[[PsPushNotificationsExtendedDelegate sharedInstance] clearLocalNotificationByIds: IOSNotificationsIds];
 #endif // PLATFORM_IOS
+}
+
+FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
+{
+	FString OutValue;
+#if PLATFORM_IOS
+	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
+	{
+		NSString* lastCode = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActivationCode];
+		if (lastCode)
+		{
+			OutValue = FString(lastCode);
+		}
+	}
+#endif // PLATFORM_IOS
+#if PLATFORM_ANDROID
+	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationActivationCode();
+#endif // PLATFORM_ANDROID
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode: \"%s\""), *OutValue);
+
+	return OutValue;
 }
 
 FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()

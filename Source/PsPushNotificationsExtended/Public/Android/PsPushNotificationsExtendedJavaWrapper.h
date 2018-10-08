@@ -18,6 +18,7 @@ public:
 	static jmethodID PsPushNotificationsExtended_LocalNotificationAddActionToCategory;
 	static jmethodID PsPushNotificationsExtended_LocalNotificationClearAll;
 	static jmethodID PsPushNotificationsExtended_LocalNotificationClearById;
+	static jmethodID PsPushNotificationsExtended_LastNotificationActivationCode;
 	static jmethodID PsPushNotificationsExtended_LastNotificationActionId;
 
 	/** Initialize notifications channel */
@@ -28,6 +29,8 @@ public:
 	static void LocalNotificationAddCategory(const FString& CategoryId, const TArray<FPsNotificationsAction>& Actions);
 	/** Clear all notifications on android */
 	static void ClearAllNotifications();
+	/** Get last notification activation code */
+	static FString GetLastNotificationActivationCode();
 	/** Get last notification action */
 	static FString GetLastNotificationAction();
 };
