@@ -11,7 +11,7 @@
 @property (nonatomic, strong) NSString* title;
 @property (nonatomic, strong) NSString* actionId;
 
--(id) initWithTitle: (NSString*) title_ andAction: (NSString*) actionId_;
+-(id) initWithTitle: (NSString*) title andAction: (NSString*) actionId;
 
 @end
 
@@ -22,13 +22,19 @@ extern NSString* PsNotificationActionFieldName;
 extern NSString* PsNotificationaAtivationCodeFieldName;
 
 /** IOS interface for RICH user notifications */
-@interface PsPushNotificationsExtendedDelegate : UIResponder <UNUserNotificationCenterDelegate>
+@interface PsPushNotificationsExtendedDelegate : NSObject <UNUserNotificationCenterDelegate>
 
 /** Get shared instance of delegate */
 +(id) sharedInstance;
 
+/** Init method averride */
+-(id) init;
+
 /** Request push notifications authorization on IOS */
 -(void) requestAuthorization;
+
+/** Create notifications content */
+-(UNMutableNotificationContent*) notificationContentWith: (NSString*) title andSubtitle:(NSString*) subtitle andBody:(NSString*)body andSound:(NSString*)soundName andBadge: (NSNumber*) badgeNumber andActivationCode:(NSString*) activationCode andCategory:(NSString*) category;
 
 /** Schedule local notification on IOS */
 -(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber andActivationCode: (NSString*) activationCode;
@@ -46,10 +52,10 @@ extern NSString* PsNotificationaAtivationCodeFieldName;
 -(void) clearLocalNotificationByIds: (NSArray<NSString*>*) ids;
 
 /** Gets string value of activation code from temporary saved dictionary */
--(NSString*) getLastActivationCode;
+-(NSString*) getLastActivationCodeFromDictionary;
 
 /** Gets string value from temporary saved dictionary */
--(NSString*) getLastActionId;
+-(NSString*) getLastActionIdFromDictionary;
 
 /** Save user content dictionary to a temporary file */
 -(void) saveToTemporaryFile: (NSDictionary*) dictionaryData;

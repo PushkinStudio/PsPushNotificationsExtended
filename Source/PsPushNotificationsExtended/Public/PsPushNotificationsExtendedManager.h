@@ -18,10 +18,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	static UPsPushNotificationsExtendedManager* GetInstance();
 
-	/** Creates an instance of the class */
-	UFUNCTION(BlueprintCallable)
-	static void CreateInstance();
-
 	/** Destructor method */
 	~UPsPushNotificationsExtendedManager() override;
 
@@ -39,7 +35,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FString SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification);
 
-	/** Sends local notifications with a specified conted at specified time
+	/** Sends local notifications with a specified content at specified time
 	 @return Notification ID
 	 */
 	UFUNCTION(BlueprintCallable)
@@ -64,4 +60,8 @@ public:
 	/** Clear last saved notification dictionary from the device */
 	UFUNCTION(BlueprintCallable)
 	void ClearLastNotificationData();
+
+private:
+	/** Creates an instance of the class */
+	static void CreateInstance();
 };

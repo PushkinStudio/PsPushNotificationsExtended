@@ -4,15 +4,19 @@
 #include "CoreMinimal.h"
 #include "PsPushNotificationsExtendedTypes.generated.h"
 
+#define PS_PUSH_FUNC (FString(__FUNCTION__))	// Current Class Name + Function Name where this is called
+#define PS_PUSH_LINE (FString::FromInt(__LINE__)) // Current Line Number in the code where this is called
+#define PS_PUSH_FUNC_LINE (PS_PUSH_FUNC + "(" + PS_PUSH_LINE + ")") // Current Class and Line Number where this is called!
+
 USTRUCT(BlueprintType)
 struct FPsNotificationsAction
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString Title;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString ActionId;
 };
 
@@ -21,31 +25,31 @@ struct FPsNotification
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FText Title;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FText Subtitle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FText Body;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString Category;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString ContentURL;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	bool bLocalContent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString SoundName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	int32 BadgeNumber;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(BlueprintReadWrite)
 	FString ActivationCode;
 
 	FPsNotification() : bLocalContent(false), BadgeNumber(0) {}
