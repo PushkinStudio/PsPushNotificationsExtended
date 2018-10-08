@@ -19,6 +19,7 @@
 
 extern NSString* PsNotificationsDataFileName;
 extern NSString* PsNotificationActionFieldName;
+extern NSString* PsNotificationaAtivationCodeFieldName;
 
 /** IOS interface for RICH user notifications */
 @interface PsPushNotificationsExtendedDelegate : UIResponder <UNUserNotificationCenterDelegate>
@@ -30,7 +31,7 @@ extern NSString* PsNotificationActionFieldName;
 -(void) requestAuthorization;
 
 /** Schedule local notification on IOS */
--(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber;
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber andActivationCode: (NSString*) activationCode;
 
 /** Schedule local notification */
 -(void) scheduleLocalPushRequestWithId: (NSString*) pushId atTime: (NSDateComponents*) dateComponents andContent: (UNMutableNotificationContent*) content;
@@ -43,6 +44,9 @@ extern NSString* PsNotificationActionFieldName;
 
 /** Clear notifications by ID */
 -(void) clearLocalNotificationByIds: (NSArray<NSString*>*) ids;
+
+/** Gets string value of activation code from temporary saved dictionary */
+-(NSString*) getLastActivationCode;
 
 /** Gets string value from temporary saved dictionary */
 -(NSString*) getLastActionId;

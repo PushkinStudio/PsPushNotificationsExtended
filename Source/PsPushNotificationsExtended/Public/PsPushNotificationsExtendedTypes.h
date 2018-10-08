@@ -45,6 +45,9 @@ struct FPsNotification
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 BadgeNumber;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString ActivationCode;
+
 	FPsNotification() : bLocalContent(false), BadgeNumber(0) {}
 
 	FPsNotification(const FText& Title_, const FText& Subtitle_, const FText& Body_,
@@ -59,7 +62,7 @@ struct FPsNotification
 	{}
 
 	FPsNotification(const FText& Title_, const FText& Subtitle_, const FText& Body_,
-		const FString& Category_, const FString& ContentURL_, bool bLocalContent_, int32 BadgeNumber_, const FString& SoundName_)
+		const FString& Category_, const FString& ContentURL_, bool bLocalContent_, int32 BadgeNumber_, const FString& SoundName_, const FString& ActivationCode_)
 		: Title(Title_),
 		  Subtitle(Subtitle_),
 		  Body(Body_),
@@ -67,6 +70,7 @@ struct FPsNotification
 		  ContentURL(ContentURL_),
 		  bLocalContent(bLocalContent_),
 		  SoundName(SoundName_),
-		  BadgeNumber(BadgeNumber_)
+		  BadgeNumber(BadgeNumber_),
+		  ActivationCode(ActivationCode_)
 	{}
 };

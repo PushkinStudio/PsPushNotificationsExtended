@@ -27,6 +27,7 @@
 
 NSString* PsNotificationsDataFileName = @"local_notification.action";
 NSString* PsNotificationActionFieldName = @"Action";
+NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 @implementation PsPushNotificationsExtendedDelegate
 
@@ -36,6 +37,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		Instance = [[self alloc] init];
+		NSLog(@"PsPushNotificationsExtendedDelegate instance created");
 	});
 	return Instance;
 }
@@ -44,6 +46,8 @@ NSString* PsNotificationActionFieldName = @"Action";
 {
 	if (@available(iOS 10, *))
 	{
+		NSLog(@"PsPushNotificationsExtendedDelegate request authorization");
+
 		__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		center.delegate = self;
 		[center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error){
@@ -51,7 +55,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 			{
 				[[UIApplication sharedApplication] registerForRemoteNotifications];
 
-				NSLog(@"RequestAuthorizationWithOptions success");
+				NSLog(@"PsPushNotificationsExtendedDelegate requestAuthorizationWithOptions success");
 
 				int32 types = (int32)(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge);
 				FFunctionGraphTask::CreateAndDispatchWhenReady([types]()
@@ -63,7 +67,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 	}
 }
 
--(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber
+-(NSString*) scheduleLocalNotificationAtTime: (NSDateComponents*) dateComponents isLocalTime: (bool) bLocal andTitle: (NSString*) title andSubtitle: (NSString*) subtitle andBody: (NSString*) body andAlertAction: (NSString*) action  andCategory: (NSString*) category andImageURL: (NSString*) imageURL isLocal: (bool) bIsLocalResource andSound: (NSString*) soundName andBadge: (NSNumber*) badgeNumber andActivationCode: (NSString*) activationCode
 {
 	if (@available(iOS 10, *))
 	{
@@ -74,6 +78,7 @@ NSString* PsNotificationActionFieldName = @"Action";
 		Content.title = title;
 		Content.subtitle = subtitle;
 		Content.body = body;
+
 		if (soundName && [soundName length] > 0)
 		{
 			Content.sound = [UNNotificationSound soundNamed: soundName];
@@ -85,6 +90,10 @@ NSString* PsNotificationActionFieldName = @"Action";
 		if (badgeNumber && [badgeNumber intValue] > 0)
 		{
 			Content.badge = badgeNumber;
+		}
+		if (activationCode && [activationCode length] > 0)
+		{
+			Content.userInfo = [[[NSDictionary alloc] initWithObjectsAndKeys: activationCode, PsNotificationaAtivationCodeFieldName, nil] autorelease];
 		}
 
 		Content.categoryIdentifier = category;
@@ -118,8 +127,23 @@ NSString* PsNotificationActionFieldName = @"Action";
 		}
 		else
 		{
-			NSString *fileURLPath = NSCachesDirectory();
-			fileURLPath = [fileURLPath stringByAppendingPathComponent: @"NotificationsContent"];
+			NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+			NSString *fileURLPath = [paths objectAtIndex : 0];
+
+			BOOL isDir = NO;
+			NSError *createCacheDirError = nil;
+			if (![[NSFileManager defaultManager] fileExistsAtPath:fileURLPath isDirectory:&isDir] && isDir == NO)
+			{
+				[[NSFileManager defaultManager] createDirectoryAtPath: fileURLPath withIntermediateDirectories: NO attributes: nil error: &createCacheDirError];
+			}
+
+			if (createCacheDirError)
+			{
+				NSLog(@"scheduleLocalNotificationAtTime %@", createCacheDirError);
+				return nil;
+			}
+
+			fileURLPath = [fileURLPath stringByAppendingPathComponent: @"/NotificationsContent"];
 			NSString *fileURL = [fileURLPath stringByAppendingPathComponent: identifier];
 
 			NSLog(@"scheduleLocalNotificationAtTime remote content download");
@@ -243,6 +267,14 @@ NSString* PsNotificationActionFieldName = @"Action";
 
 	NSMutableDictionary* dict = [[[NSMutableDictionary alloc] init] autorelease];
 	[dict setObject: response.actionIdentifier forKey: PsNotificationActionFieldName];
+
+	NSDictionary* userInfo = [[[[response notification] request] content] userInfo];
+	if (userInfo)
+	{
+		NSString* activationCode = (NSString*)[userInfo objectForKey: PsNotificationaAtivationCodeFieldName];
+		[dict setObject: activationCode forKey: PsNotificationaAtivationCodeFieldName];
+	}
+
 	[self saveToTemporaryFile: dict];
 
 	completionHandler();
@@ -256,6 +288,18 @@ NSString* PsNotificationActionFieldName = @"Action";
 -(void) clearLocalNotificationByIds: (NSArray<NSString*>*) ids
 {
 	[[UNUserNotificationCenter currentNotificationCenter] removePendingNotificationRequestsWithIdentifiers: ids];
+}
+
+-(NSString*) getLastActivationCode
+{
+	NSDictionary* dict = [self loadDictionaryFromTemporaryFile];
+	if (!dict)
+	{
+		return nil;
+	}
+	
+	NSString* acticationCodeStr = (NSString*)dict[PsNotificationaAtivationCodeFieldName];
+	return acticationCodeStr;
 }
 
 -(NSString*) getLastActionId
