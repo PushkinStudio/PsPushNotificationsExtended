@@ -30,7 +30,7 @@ void UPsPushNotificationsExtendedManager::CreateInstance()
 {
 	if (PushNotificationsExtendedManagerInstance)
 	{
-		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("UPsPushNotificationsExtendedManager instance already created"));
+		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("%s instance already created"), *PS_PUSH_FUNC_LINE);
 		return;
 	}
 
@@ -45,17 +45,22 @@ UPsPushNotificationsExtendedManager::UPsPushNotificationsExtendedManager(const F
 {
 	if (PushNotificationsExtendedManagerInstance != nullptr)
 	{
-		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("UPsPushNotificationsExtendedManager Attempt to create another instance"));
+		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("%s Attempt to create another instance"), *PS_PUSH_FUNC_LINE);
 	}
 
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager created"));
+#if PLATFORM_IOS
+	// Creating delegate early to earn push actions
+	[PsPushNotificationsExtendedDelegate sharedInstance];
+#endif // PLATFORM_IOS
+
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s created"), *PS_PUSH_FUNC_LINE);
 }
 
 UPsPushNotificationsExtendedManager::~UPsPushNotificationsExtendedManager()
 {
 	if (PushNotificationsExtendedManagerInstance != this)
 	{
-		UE_LOG(LogPsPushNotificationsExtended, Warning, TEXT("UPsPushNotificationsExtendedManager another manager instance have to be destroyed"));
+		UE_LOG(LogPsPushNotificationsExtended, Warning, TEXT("%s another manager instance have to be destroyed"), *PS_PUSH_FUNC_LINE);
 		return;
 	}
 
@@ -64,7 +69,7 @@ UPsPushNotificationsExtendedManager::~UPsPushNotificationsExtendedManager()
 
 void UPsPushNotificationsExtendedManager::RequestPushNotifications()
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::RequestPushNotifications"));
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 #if PLATFORM_IOS
 	[[PsPushNotificationsExtendedDelegate sharedInstance] requestAuthorization];
@@ -76,7 +81,7 @@ void UPsPushNotificationsExtendedManager::RequestPushNotifications()
 
 void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::AddNotificationCategory"));
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 #if PLATFORM_IOS
 	NSMutableArray* IOSActions = [[[NSMutableArray alloc] init] autorelease];
@@ -106,7 +111,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float 
 
 FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::SendLocalNotification"));
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	FString PushIdStr;
 #if PLATFORM_IOS
@@ -144,7 +149,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 
 void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::ClearAllLocalNotifications"));
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 #if PLATFORM_IOS
 	[[PsPushNotificationsExtendedDelegate sharedInstance] clearAllLocalNotifications];
@@ -156,7 +161,7 @@ void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
 
 void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId"));
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 #if PLATFORM_IOS
 	NSMutableArray* IOSNotificationsIds = [[[NSMutableArray alloc] init] autorelease];
@@ -175,7 +180,7 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
 #if PLATFORM_IOS
 	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
 	{
-		NSString* lastCode = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActivationCode];
+		NSString* lastCode = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActivationCodeFromDictionary];
 		if (lastCode)
 		{
 			OutValue = FString(lastCode);
@@ -185,7 +190,7 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
 #if PLATFORM_ANDROID
 	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationActivationCode();
 #endif // PLATFORM_ANDROID
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode: \"%s\""), *OutValue);
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s: \"%s\""), *PS_PUSH_FUNC_LINE, *OutValue);
 
 	return OutValue;
 }
@@ -196,7 +201,7 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
 #if PLATFORM_IOS
 	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
 	{
-		NSString* lastActionId = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActionId];
+		NSString* lastActionId = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActionIdFromDictionary];
 		if (lastActionId)
 		{
 			OutValue = FString(lastActionId);
@@ -206,7 +211,7 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
 #if PLATFORM_ANDROID
 	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationAction();
 #endif // PLATFORM_ANDROID
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("UPsPushNotificationsExtendedManager::GetLastNotificationActionId: \"%s\""), *OutValue);
+	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s: \"%s\""), *PS_PUSH_FUNC_LINE, *OutValue);
 
 	return OutValue;
 }
