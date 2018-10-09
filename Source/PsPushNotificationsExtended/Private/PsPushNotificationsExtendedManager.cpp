@@ -48,11 +48,6 @@ UPsPushNotificationsExtendedManager::UPsPushNotificationsExtendedManager(const F
 		UE_LOG(LogPsPushNotificationsExtended, Error, TEXT("%s Attempt to create another instance"), *PS_PUSH_FUNC_LINE);
 	}
 
-#if PLATFORM_IOS
-	// Creating delegate early to earn push actions
-	[PsPushNotificationsExtendedDelegate sharedInstance];
-#endif // PLATFORM_IOS
-
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s created"), *PS_PUSH_FUNC_LINE);
 }
 
