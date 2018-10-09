@@ -4,6 +4,7 @@
 #include "PsPushNotificationsExtended_IOS.h"
 #include "Misc/CoreDelegates.h"
 #include "PsPushNotificationsExtendedManager.h"
+#include "IOSAppDelegate+PsPushNotificationsExtended.h"
 
 #import <Foundation/Foundation.h>
 
@@ -66,7 +67,6 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 		NSLog(@"PsPushNotificationsExtendedDelegate request authorization");
 
 		__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-//		center.delegate = self;
 		[center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error){
 			if(!error)
 			{
@@ -119,7 +119,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	{
 		NSString* PushID = [NSUUID UUID].UUIDString;
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-		UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
+		center.delegate = self;
 
 		// load image content
 		NSString *identifier = @"image.jpg";
@@ -131,6 +131,8 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 		if (bIsLocalResource || !url)
 		{
+			UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
+
 			if (url)
 			{
 				NSError *localError = nil;
@@ -164,6 +166,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 				if (createCacheDirError)
 				{
 					NSLog(@"scheduleLocalNotificationAtTime %@", createCacheDirError);
+					UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
 					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
 					return PushID;
 				}

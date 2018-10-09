@@ -7,8 +7,6 @@
 
 void FPsPushNotificationsExtended::StartupModule()
 {
-	// Creating Push manager on startup (ios notifications handle)
-	UPsPushNotificationsExtendedManager::GetInstance();
 }
 
 void FPsPushNotificationsExtended::ShutdownModule()
