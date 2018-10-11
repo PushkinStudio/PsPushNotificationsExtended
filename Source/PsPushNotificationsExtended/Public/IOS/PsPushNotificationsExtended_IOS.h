@@ -5,6 +5,7 @@
 
 #import <UIKit/UIKit.h>
 #import <UserNotifications/UserNotifications.h>
+#import <Foundation/Foundation.h>
 
 /** Simple structure to pass action argument as pair */
 @interface PsActionArgIOS : NSObject
@@ -32,6 +33,8 @@ extern NSString* PsNotificationaAtivationCodeFieldName;
 
 /** Request push notifications authorization on IOS */
 -(void) requestAuthorization;
+
+-(UNNotificationAttachment*) getAttachementWithId:(NSString*) attachementId andURL:(NSString*) fileURL;
 
 /** Create notifications content */
 -(UNMutableNotificationContent*) notificationContentWith: (NSString*) title andSubtitle:(NSString*) subtitle andBody:(NSString*)body andSound:(NSString*)soundName andBadge: (NSNumber*) badgeNumber andActivationCode:(NSString*) activationCode andCategory:(NSString*) category;
