@@ -4,7 +4,7 @@
 #include "PsPushNotificationsExtendedManager.h"
 #include "PsPushNotificationsExtendedTypes.h"
 
-#incldue "Android/PsPushNotificationsExtendedJavaWrapper.h"
+#include "Android/PsPushNotificationsExtendedJavaWrapper.h"
 
 void UPsPushNotificationsExtendedManager::RequestPushNotifications()
 {
@@ -45,7 +45,11 @@ void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
 
 void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
 {
-	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
+	for (const FString& NotificationId : NotificationsIds)
+	{
+		UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called with ID: %s"), *PS_PUSH_FUNC_LINE, *NotificationId);
+		FPsPushNotificationsExtendedJavaWrapper::ClearNotificationsById(NotificationId);
+	}
 }
 
 FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
