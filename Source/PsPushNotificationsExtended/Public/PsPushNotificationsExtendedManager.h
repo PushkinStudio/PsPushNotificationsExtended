@@ -14,12 +14,12 @@ class UPsPushNotificationsExtendedManager : public UObject
 	GENERATED_UCLASS_BODY()
 
 public:
-	/** Get instance of the manager */
+	/** Get instance with more specific function name for BP */
 	UFUNCTION(BlueprintCallable)
-	static UPsPushNotificationsExtendedManager* GetInstance();
+	static UPsPushNotificationsExtendedManager* GetPsPushNotificationsExtendedManager();
 
-	/** Destructor method */
-	~UPsPushNotificationsExtendedManager() override;
+	/** Get instance of the manager */
+	static UPsPushNotificationsExtendedManager* GetInstance();
 
 	/** Requests authority for push notifications */
 	UFUNCTION(BlueprintCallable)
@@ -60,8 +60,4 @@ public:
 	/** Clear last saved notification dictionary from the device */
 	UFUNCTION(BlueprintCallable)
 	void ClearLastNotificationData();
-
-private:
-	/** Creates an instance of the class */
-	static void CreateInstance();
 };

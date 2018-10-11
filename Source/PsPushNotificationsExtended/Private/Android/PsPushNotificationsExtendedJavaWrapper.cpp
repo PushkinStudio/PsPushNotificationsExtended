@@ -5,8 +5,6 @@
 #include "PsPushNotificationsExtendedManager.h"
 #include "PsPushNotificationsExtendedSettings.h"
 
-#if USE_ANDROID_JNI
-
 #include "Runtime/Launch/Public/Android/AndroidJNI.h"
 #include "AndroidApplication.h"
 #include "UnrealEngine.h"
@@ -164,5 +162,3 @@ jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_L
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearById;
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActivationCode;
 jmethodID FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LastNotificationActionId;
-
-#endif // USE_ANDROID_JNI

@@ -6,9 +6,25 @@
 #include "PsPushNotificationsExtendedManager.h"
 #include "IOSAppDelegate+PsPushNotificationsExtended.h"
 
-#import <Foundation/Foundation.h>
+#import <CommonCrypto/CommonDigest.h>
 
 #if PLATFORM_IOS
+
+@implementation NSString (MyAdditions)
+-(NSString*) Ps_GetMD5
+{
+	const char *cStr = [self UTF8String];
+	unsigned char result[CC_MD5_DIGEST_LENGTH];
+	CC_MD5( cStr, (int)strlen(cStr), result ); // This is the md5 call
+	return [NSString stringWithFormat:
+			@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+			result[0], result[1], result[2], result[3],
+			result[4], result[5], result[6], result[7],
+			result[8], result[9], result[10], result[11],
+			result[12], result[13], result[14], result[15]
+			];
+}
+@end
 
 @implementation PsActionArgIOS
 
@@ -42,7 +58,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		Instance = [[self alloc] init];
-		NSLog(@"PsPushNotificationsExtendedDelegate instance created");
+		NSLog(@"%s instance created", __PRETTY_FUNCTION__);
 	});
 	return Instance;
 }
@@ -52,9 +68,9 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	self = [super init];
 	if (self)
 	{
+		NSLog(@"%s init delegate", __PRETTY_FUNCTION__);
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		center.delegate = self;
-		NSLog(@"PsPushNotificationsExtendedDelegate init delegate");
 	}
 
 	return self;
@@ -64,7 +80,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 {
 	if (@available(iOS 10, *))
 	{
-		NSLog(@"PsPushNotificationsExtendedDelegate request authorization");
+		NSLog(@"%s request authorization", __PRETTY_FUNCTION__);
 
 		__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		[center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error){
@@ -72,7 +88,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			{
 				[[UIApplication sharedApplication] registerForRemoteNotifications];
 
-				NSLog(@"PsPushNotificationsExtendedDelegate requestAuthorizationWithOptions success");
+				NSLog(@"%s requestAuthorizationWithOptions success", __PRETTY_FUNCTION__);
 
 				int32 types = (int32)(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge);
 				FFunctionGraphTask::CreateAndDispatchWhenReady([types]()
@@ -82,6 +98,35 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			}
 		}];
 	}
+}
+
+-(UNNotificationAttachment*) getAttachementWithId:(NSString*) attachementId andURL:(NSString*) fileURL
+{
+	NSURL *url = [NSURL URLWithString: fileURL];
+	if (!url)
+	{
+		return nil;
+	}
+	NSArray* paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+	NSString* cacheURLPath = [paths objectAtIndex : 0];
+
+	NSError* localError = nil;
+	NSString* tmpPath = [NSString stringWithFormat:@"%@/%@.%@", cacheURLPath, attachementId, url.pathExtension];
+	[[NSFileManager defaultManager] copyItemAtPath: fileURL toPath: tmpPath error: &localError];
+	if (localError)
+	{
+		NSLog(@"%s attachement create error %@", __PRETTY_FUNCTION__, localError);
+		return nil;
+	}
+
+	UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier: attachementId URL: [NSURL fileURLWithPath: tmpPath] options:nil error: &localError];
+	if (localError)
+	{
+		NSLog(@"%s attachement create error %@", __PRETTY_FUNCTION__, localError);
+		return nil;
+	}
+
+	return attachment;
 }
 
 -(UNMutableNotificationContent*) notificationContentWith: (NSString*) title andSubtitle:(NSString*) subtitle andBody:(NSString*)body andSound:(NSString*)soundName andBadge: (NSNumber*) badgeNumber andActivationCode:(NSString*) activationCode andCategory:(NSString*) category
@@ -122,12 +167,13 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 		center.delegate = self;
 
 		// load image content
-		NSString *identifier = @"image.jpg";
+		NSString *identifier = @"";
 		NSURL *url = [NSURL URLWithString:imageURL];
 		if (url)
 		{
-			identifier = [NSString stringWithFormat:@"file.%@.%@", PushID, url.lastPathComponent];
+			identifier = [NSString stringWithFormat:@"%@.%@", [imageURL Ps_GetMD5], url.pathExtension];
 		}
+		NSString* attachementId = [NSString stringWithFormat:@"%@.%@", PushID, identifier];
 
 		if (bIsLocalResource || !url)
 		{
@@ -136,15 +182,11 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			if (url)
 			{
 				NSError *localError = nil;
-				UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier:identifier URL:[NSURL fileURLWithPath:imageURL] options:nil error:&localError];
-				if(!localError)
+				UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: imageURL];
+				if(attachment)
 				{
 					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
-					NSLog(@"scheduleLocalNotificationAtTime local attachement assign");
-				}
-				else
-				{
-					NSLog(@"scheduleLocalNotificationAtTime error %@", localError);
+					NSLog(@"%s local attachement assign", __PRETTY_FUNCTION__);
 				}
 			}
 
@@ -159,72 +201,92 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			BOOL isDir = NO;
 			if (![[NSFileManager defaultManager] fileExistsAtPath:fileURLPath isDirectory:&isDir] && isDir == NO)
 			{
-				NSLog(@"scheduleLocalNotificationAtTime creating notifications cache directory: %@", fileURLPath);
+				NSLog(@"%s creating notifications cache directory: %@", __PRETTY_FUNCTION__, fileURLPath);
 				NSError *createCacheDirError = nil;
 				[[NSFileManager defaultManager] createDirectoryAtPath: fileURLPath withIntermediateDirectories: YES attributes: nil error: &createCacheDirError];
 
 				if (createCacheDirError)
 				{
-					NSLog(@"scheduleLocalNotificationAtTime %@", createCacheDirError);
-					UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
+					NSLog(@"%s %@", __PRETTY_FUNCTION__, createCacheDirError);
+					UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge: badgeNumber andActivationCode: activationCode andCategory: category];
 					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
 					return PushID;
 				}
 			}
 
-			NSLog(@"scheduleLocalNotificationAtTime notifications cache directory at: %@", fileURLPath);
+			NSLog(@"%s notifications cache directory at: %@", __PRETTY_FUNCTION__, fileURLPath);
 			NSString *fileURL = [fileURLPath stringByAppendingPathComponent: identifier];
 
-			NSLog(@"scheduleLocalNotificationAtTime remote content download");
-			NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: url
-				completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
-
-				UNMutableNotificationContent* AsyncContent = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
-
-				NSLog(@"scheduleLocalNotificationAtTime downloadTaskWithURL %@", location);
-				if (error)
-				{
-					NSLog(@"scheduleLocalNotificationAtTime error %@", error);
-					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
-					return;
-				}
-
-				if (!location)
-				{
-					NSLog(@"scheduleLocalNotificationAtTime location is nil");
-					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
-					return;
-				}
+			if ([[NSFileManager defaultManager] fileExistsAtPath: fileURL])
+			{
+				NSLog(@"%s cache file exists %@", __PRETTY_FUNCTION__, fileURL);
 
 				NSError *localError = nil;
+				UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge: badgeNumber andActivationCode: activationCode andCategory: category];
 
-				NSString* directory = [fileURL stringByDeletingLastPathComponent];
-				NSLog(@"scheduleLocalNotificationAtTime try create dir %@", directory);
-
-				NSLog(@"scheduleLocalNotificationAtTime moving tmp file: %@ to path: %@", [location path], fileURL);
-				[[NSFileManager defaultManager] moveItemAtPath: [location path] toPath: fileURL error: &localError];
-				if(localError)
+				UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: fileURL];
+				if (attachment)
 				{
-					NSLog(@"scheduleLocalNotificationAtTime can not move file: %@", localError);
-					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
-					return;
+					NSLog(@"%s assigning attachement", __PRETTY_FUNCTION__);
+					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
 				}
 
-				// Creating attachement
-				NSLog(@"scheduleLocalNotificationAtTime setting up notification attachement");
-				UNNotificationAttachment *attachment = [UNNotificationAttachment attachmentWithIdentifier:identifier URL:[NSURL fileURLWithPath: fileURL] options:nil error: &localError];
-				if (localError)
+				[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: Content];
+				return PushID;
+			}
+
+			NSLog(@"%s remote content download", __PRETTY_FUNCTION__);
+			NSURLSessionDownloadTask *task = [[NSURLSession sharedSession] downloadTaskWithURL: url
+				completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+				@synchronized(self)
 				{
-					NSLog(@"scheduleLocalNotificationAtTime remote attachement assign error %@", localError);
+					UNMutableNotificationContent* AsyncContent = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge:  badgeNumber andActivationCode: activationCode andCategory: category];
+
+					NSLog(@"%s downloadTaskWithURL %@", __PRETTY_FUNCTION__, location);
+					if (error)
+					{
+						NSLog(@"%s error %@", __PRETTY_FUNCTION__, error);
+						[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
+						return;
+					}
+
+					if (!location)
+					{
+						NSLog(@"%s location is nil", __PRETTY_FUNCTION__);
+						[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
+						return;
+					}
+
+					NSError *localError = nil;
+
+					if (![[NSFileManager defaultManager] fileExistsAtPath: fileURL])
+					{
+						NSLog(@"%s moving tmp file: %@ to path: %@", __PRETTY_FUNCTION__, [location path], fileURL);
+						[[NSFileManager defaultManager] moveItemAtPath: [location path] toPath: fileURL error: &localError];
+						if(localError)
+						{
+							NSLog(@"%s can not move file: %@", __PRETTY_FUNCTION__, localError);
+							[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
+							return;
+						}
+					}
+
+					// Creating attachement
+					NSLog(@"%s setting up notification attachement", __PRETTY_FUNCTION__);
+					UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: fileURL];
+					if (!attachment)
+					{
+						NSLog(@"%s remote attachement assign error %@", __PRETTY_FUNCTION__, localError);
+						[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
+						return;
+					}
+
+					NSLog(@"%s assigning attachement as notification content", __PRETTY_FUNCTION__);
+					AsyncContent.attachments = [NSArray arrayWithObjects: attachment, nil];
 					[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
-					return;
+
+					NSLog(@"%s remote attachement assign success", __PRETTY_FUNCTION__);
 				}
-
-				NSLog(@"scheduleLocalNotificationAtTime assigning attachement as notification content");
-				AsyncContent.attachments = [NSArray arrayWithObjects: attachment, nil];
-				[self scheduleLocalPushRequestWithId: PushID atTime: dateComponents andContent: AsyncContent];
-
-				NSLog(@"scheduleLocalNotificationAtTime remote attachement assign success");
 			}];
 
 			[task resume];
@@ -251,11 +313,11 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	[center addNotificationRequest: Request withCompletionHandler: ^(NSError *error) {
 		if (error != nil)
 		{
-			NSLog(@"scheduleLocalPushRequestWithId create request error: %@",error);
+			NSLog(@"%s create request error: %@", __PRETTY_FUNCTION__, error);
 		}
 		else
 		{
-			NSLog(@"scheduleLocalPushRequestWithId create request success");
+			NSLog(@"%s create request success", __PRETTY_FUNCTION__);
 		}
 	}];
 }
@@ -273,7 +335,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 				title: Action.title options: UNNotificationActionOptionForeground];
 			[actionsArray addObject: actionObj];
 
-			NSLog(@"scheduleLocalPushRequestWithId set action %@ for category %@", Action.actionId, categoryName);
+			NSLog(@"%s set action %@ for category %@", __PRETTY_FUNCTION__, Action.actionId, categoryName);
 		}
 
 		UNNotificationCategory* category = [UNNotificationCategory categoryWithIdentifier: categoryName
@@ -290,7 +352,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	didReceiveNotificationResponse:(UNNotificationResponse *)response
 	withCompletionHandler:(void (^)(void))completionHandler
 {
-	NSLog(@"didReceiveNotificationResponse doing action push delegate callback %@", response.actionIdentifier);
+	NSLog(@"%s doing action push delegate callback %@", __PRETTY_FUNCTION__, response.actionIdentifier);
 
 	NSMutableDictionary* dict = [[[NSMutableDictionary alloc] init] autorelease];
 	[dict setObject: response.actionIdentifier forKey: PsNotificationActionFieldName];
@@ -352,7 +414,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	[[NSFileManager defaultManager] createDirectoryAtPath:tmpDirName withIntermediateDirectories:TRUE attributes:nil error: &localError];
 	if(localError)
 	{
-		NSLog(@"saveToTemporaryFile Error: %@", localError);
+		NSLog(@"%s Error: %@", __PRETTY_FUNCTION__, localError);
 		return;
 	}
 
@@ -364,7 +426,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	}
 
 	[data writeToFile:fileURL atomically:YES];
-	NSLog(@"saveToTemporaryFile saved: %@ to %@", dictionaryData, fileURL);
+	NSLog(@"%s saved: %@ to %@", __PRETTY_FUNCTION__, dictionaryData, fileURL);
 }
 
 -(NSDictionary*) loadDictionaryFromTemporaryFile
@@ -374,11 +436,11 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	NSData *data = [[NSFileManager defaultManager] contentsAtPath: fileURL];
 	if (!data)
 	{
-		NSLog(@"loadDictionaryFromTemporaryFile: failed!");
+		NSLog(@"%s: failed!", __PRETTY_FUNCTION__);
 		return nil;
 	}
 
-	NSLog(@"loadDictionaryFromTemporaryFile: %@ from %@", data, fileURL);
+	NSLog(@"%s: %@ from %@", __PRETTY_FUNCTION__, data, fileURL);
 
 	NSDictionary *dictionary = (NSDictionary*) [NSKeyedUnarchiver unarchiveObjectWithData:data];
 	return dictionary;
