@@ -232,6 +232,22 @@
 				}
 			}
 
+			public void PsPushNotificationsExtended_LocalNotificationClearById(String notificationIdStr)
+			{
+				try
+				{
+					int notificationId = Integer.parseInt(notificationIdStr);
+					AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+					PendingIntent pendingIntent = PendingIntent.getBroadcast(this, notificationId, new Intent(this, PsLocalNotificationsExtendedReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
+					pendingIntent.cancel();
+					alarmManager.cancel(pendingIntent);
+				}
+				catch(Exception e)
+				{
+					Log.debug("LocalNotificationClearById: " + e.getMessage());
+				}
+			}
+
 			public void PsPushNotificationsExtended_LocalNotificationClearAll()
 			{
 				ArrayList&lt;Integer&gt; idList = LocalNotificationGetIDList();

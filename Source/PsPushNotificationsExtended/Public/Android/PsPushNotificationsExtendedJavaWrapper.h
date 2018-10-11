@@ -27,6 +27,8 @@ public:
 	static FString LocalNotificationScheduleAtTime(const FDateTime& DateTime, bool bIsLocalTime, const FString& Title, const FString& Body, const FString& ActivationEvent, const FString& Category, const FString& ContentURL);
 	/** Add category for notification */
 	static void LocalNotificationAddCategory(const FString& CategoryId, const TArray<FPsNotificationsAction>& Actions);
+	/** Clear notifications by id on android */
+	static void ClearNotificationsById(const FString& NotificationId);
 	/** Clear all notifications on android */
 	static void ClearAllNotifications();
 	/** Get last notification activation code */

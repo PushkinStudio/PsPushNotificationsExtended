@@ -25,6 +25,9 @@ void FPsPushNotificationsExtendedJavaWrapper::Init()
 		// Find add category method
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationAddActionToCategory = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationAddCategory", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
 
+		// Clear by id method
+		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearById = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationClearById", "(Ljava/lang/String;)V", false);
+
 		// Clear all method
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearAll = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationClearAll", "()V", false);
 
@@ -106,6 +109,19 @@ void FPsPushNotificationsExtendedJavaWrapper::LocalNotificationAddCategory(const
 		}
 
 		Env->DeleteLocalRef(JCategoryId);
+	}
+}
+
+void FPsPushNotificationsExtendedJavaWrapper::ClearNotificationsById(const FString& NotificationId)
+{
+	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
+	{
+		jstring JNotificationId = Env->NewStringUTF(TCHAR_TO_UTF8(*NotificationId));
+
+		// Adding actions to category
+		FJavaWrapper::CallVoidMethod(Env, FJavaWrapper::GameActivityThis, FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationClearById, JNotificationId);
+
+		Env->DeleteLocalRef(JNotificationId);
 	}
 }
 
