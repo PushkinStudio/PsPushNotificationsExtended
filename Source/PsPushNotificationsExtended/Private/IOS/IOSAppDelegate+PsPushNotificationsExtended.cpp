@@ -16,7 +16,6 @@ willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 	NSLog(@"%s IOSAppDelegate+PsPushNotifications %@", __PRETTY_FUNCTION__, launchOptions);
 
 	self.bDeviceInPortraitMode = false;
-	bEngineInit = false;
 
 	// Creating delegate early to earn push actions
 	[PsPushNotificationsExtendedDelegate sharedInstance];

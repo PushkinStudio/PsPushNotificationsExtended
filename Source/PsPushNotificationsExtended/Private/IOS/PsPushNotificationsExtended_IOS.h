@@ -25,6 +25,9 @@ extern NSString* PsNotificationaAtivationCodeFieldName;
 /** IOS interface for RICH user notifications */
 @interface PsPushNotificationsExtendedDelegate : NSObject <UNUserNotificationCenterDelegate>
 
+@property (nonatomic, retain) NSString* currentActivationCode;
+@property (nonatomic, retain) NSString* currentActionId;
+
 /** Get shared instance of delegate */
 +(id) sharedInstance;
 

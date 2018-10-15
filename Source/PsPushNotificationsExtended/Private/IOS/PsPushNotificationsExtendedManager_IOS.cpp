@@ -1,19 +1,43 @@
 // Copyright 2015-2018 Mail.Ru Group. All Rights Reserved.
 
 #include "PsPushNotificationsExtendedPrivatePCH.h"
-#include "PsPushNotificationsExtendedManager.h"
+#include "PsPushNotificationsExtendedManager_IOS.h"
 #include "PsPushNotificationsExtendedTypes.h"
-
 #include "IOS/PsPushNotificationsExtended_IOS.h"
+#include "Misc/CoreDelegates.h"
 
-void UPsPushNotificationsExtendedManager::RequestPushNotifications()
+UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::GetInstance()
+{
+	if (!PushNotificationsExtendedManagerInstance)
+	{
+		UClass* ManagerClass = UPsPushNotificationsExtendedManagerIOS::StaticClass();
+		PushNotificationsExtendedManagerInstance = NewObject<UPsPushNotificationsExtendedManagerIOS>(GetTransientPackage(), ManagerClass);
+		PushNotificationsExtendedManagerInstance->SetFlags(RF_Standalone);
+		PushNotificationsExtendedManagerInstance->AddToRoot();
+	}
+
+	return PushNotificationsExtendedManagerInstance;
+}
+
+UPsPushNotificationsExtendedManagerIOS::UPsPushNotificationsExtendedManagerIOS(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	FCoreDelegates::ApplicationHasEnteredForegroundDelegate.AddUObject(this, &UPsPushNotificationsExtendedManagerIOS::OnApplicationHasEnteredForegroundDelegate);
+}
+
+UPsPushNotificationsExtendedManagerIOS::~UPsPushNotificationsExtendedManagerIOS()
+{
+	FCoreDelegates::ApplicationHasEnteredForegroundDelegate.RemoveAll(this);
+}
+
+void UPsPushNotificationsExtendedManagerIOS::RequestPushNotifications()
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	[[PsPushNotificationsExtendedDelegate sharedInstance] requestAuthorization];
 }
 
-void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
+void UPsPushNotificationsExtendedManagerIOS::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
@@ -30,7 +54,7 @@ void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString&
 	 	[NSString stringWithFString: Name] andActions: IOSActions];
 }
 
-FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManagerIOS::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
 {
 	FDateTime TargetTime = FDateTime::Now();
 	TargetTime += FTimespan::FromSeconds(SecondsFromNow);
@@ -38,7 +62,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float 
 	return SendLocalNotification(TargetTime, true, Notification);
 }
 
-FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManagerIOS::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
@@ -71,14 +95,14 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 	return PushIdStr;
 }
 
-void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
+void UPsPushNotificationsExtendedManagerIOS::ClearAllLocalNotifications()
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	[[PsPushNotificationsExtendedDelegate sharedInstance] clearAllLocalNotifications];
 }
 
-void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
+void UPsPushNotificationsExtendedManagerIOS::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
@@ -91,12 +115,12 @@ void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TA
 	[[PsPushNotificationsExtendedDelegate sharedInstance] clearLocalNotificationByIds: IOSNotificationsIds];
 }
 
-FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
+FString UPsPushNotificationsExtendedManagerIOS::GetLastNotificationActivationCode()
 {
 	FString OutValue;
 	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
 	{
-		NSString* lastCode = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActivationCodeFromDictionary];
+		NSString* lastCode = [[PsPushNotificationsExtendedDelegate sharedInstance] currentActivationCode];
 		if (lastCode)
 		{
 			OutValue = FString(lastCode);
@@ -107,13 +131,13 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
 	return OutValue;
 }
 
-FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
+FString UPsPushNotificationsExtendedManagerIOS::GetLastNotificationActionId()
 {
 	FString OutValue;
 
 	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
 	{
-		NSString* lastActionId = [[PsPushNotificationsExtendedDelegate sharedInstance] getLastActionIdFromDictionary];
+		NSString* lastActionId = [[PsPushNotificationsExtendedDelegate sharedInstance] currentActionId];
 		if (lastActionId)
 		{
 			OutValue = FString(lastActionId);
@@ -124,10 +148,15 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
 	return OutValue;
 }
 
-void UPsPushNotificationsExtendedManager::ClearLastNotificationData()
+void UPsPushNotificationsExtendedManagerIOS::OnApplicationHasEnteredForegroundDelegate()
 {
-	if ([PsPushNotificationsExtendedDelegate sharedInstance] != nil)
+	PsPushNotificationsExtendedDelegate* iosPushDelegate = [PsPushNotificationsExtendedDelegate sharedInstance];
+	if (iosPushDelegate == nil)
 	{
-		[[PsPushNotificationsExtendedDelegate sharedInstance] clearNotificationDictionaryData];
+		return;
 	}
+
+	iosPushDelegate.currentActivationCode = [iosPushDelegate getLastActivationCodeFromDictionary];
+	iosPushDelegate.currentActionId = [iosPushDelegate getLastActionIdFromDictionary];
+	[iosPushDelegate clearNotificationDictionaryData];
 }

@@ -52,6 +52,9 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 @implementation PsPushNotificationsExtendedDelegate
 
+@synthesize currentActivationCode;
+@synthesize currentActionId;
+
 +(id) sharedInstance
 {
 	static PsPushNotificationsExtendedDelegate *Instance = nil;
@@ -71,6 +74,10 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 		NSLog(@"%s init delegate", __PRETTY_FUNCTION__);
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		center.delegate = self;
+
+		self.currentActivationCode = [self getLastActivationCodeFromDictionary];
+		self.currentActionId = [self getLastActionIdFromDictionary];
+		[self clearNotificationDictionaryData];
 	}
 
 	return self;
@@ -389,7 +396,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	{
 		return nil;
 	}
-	
+
 	NSString* acticationCodeStr = (NSString*)dict[PsNotificationaAtivationCodeFieldName];
 	return acticationCodeStr;
 }

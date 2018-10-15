@@ -1,26 +1,43 @@
 // Copyright 2015-2018 Mail.Ru Group. All Rights Reserved.
 
 #include "PsPushNotificationsExtendedPrivatePCH.h"
-#include "PsPushNotificationsExtendedManager.h"
+#include "PsPushNotificationsExtendedManager_Android.h"
 #include "PsPushNotificationsExtendedTypes.h"
-
 #include "Android/PsPushNotificationsExtendedJavaWrapper.h"
 
-void UPsPushNotificationsExtendedManager::RequestPushNotifications()
+UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::GetInstance()
+{
+	if (!PushNotificationsExtendedManagerInstance)
+	{
+		UClass* ManagerClass = UPsPushNotificationsExtendedManagerAndroid::StaticClass();
+		PushNotificationsExtendedManagerInstance = NewObject<UPsPushNotificationsExtendedManagerAndroid>(GetTransientPackage(), ManagerClass);
+		PushNotificationsExtendedManagerInstance->SetFlags(RF_Standalone);
+		PushNotificationsExtendedManagerInstance->AddToRoot();
+	}
+
+	return PushNotificationsExtendedManagerInstance;
+}
+
+UPsPushNotificationsExtendedManagerAndroid::UPsPushNotificationsExtendedManagerAndroid(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+}
+
+void UPsPushNotificationsExtendedManagerAndroid::RequestPushNotifications()
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	FPsPushNotificationsExtendedJavaWrapper::Init();
 }
 
-void UPsPushNotificationsExtendedManager::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
+void UPsPushNotificationsExtendedManagerAndroid::AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	FPsPushNotificationsExtendedJavaWrapper::LocalNotificationAddCategory(Name, Actions);
 }
 
-FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManagerAndroid::SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification)
 {
 	FDateTime TargetTime = FDateTime::Now();
 	TargetTime += FTimespan::FromSeconds(SecondsFromNow);
@@ -28,7 +45,7 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotificationFromNow(float 
 	return SendLocalNotification(TargetTime, true, Notification);
 }
 
-FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
+FString UPsPushNotificationsExtendedManagerAndroid::SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification)
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
@@ -36,14 +53,14 @@ FString UPsPushNotificationsExtendedManager::SendLocalNotification(const FDateTi
 	return PushIdStr;
 }
 
-void UPsPushNotificationsExtendedManager::ClearAllLocalNotifications()
+void UPsPushNotificationsExtendedManagerAndroid::ClearAllLocalNotifications()
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
 	FPsPushNotificationsExtendedJavaWrapper::ClearAllNotifications();
 }
 
-void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
+void UPsPushNotificationsExtendedManagerAndroid::ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds)
 {
 	for (const FString& NotificationId : NotificationsIds)
 	{
@@ -52,7 +69,7 @@ void UPsPushNotificationsExtendedManager::ClearLocalNotificationsWithId(const TA
 	}
 }
 
-FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
+FString UPsPushNotificationsExtendedManagerAndroid::GetLastNotificationActivationCode()
 {
 	FString OutValue;
 	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationActivationCode();
@@ -61,16 +78,11 @@ FString UPsPushNotificationsExtendedManager::GetLastNotificationActivationCode()
 	return OutValue;
 }
 
-FString UPsPushNotificationsExtendedManager::GetLastNotificationActionId()
+FString UPsPushNotificationsExtendedManagerAndroid::GetLastNotificationActionId()
 {
 	FString OutValue;
 	OutValue = FPsPushNotificationsExtendedJavaWrapper::GetLastNotificationAction();
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s: \"%s\""), *PS_PUSH_FUNC_LINE, *OutValue);
 
 	return OutValue;
-}
-
-void UPsPushNotificationsExtendedManager::ClearLastNotificationData()
-{
-	// Nothing to do here required for android
 }
