@@ -6,6 +6,7 @@
 #include "IOSAppDelegate.h"
 
 @interface IOSAppDelegate (PsPushNotificationsExtended)
+
 @end
 
 #endif // PLATFORM_IOS

@@ -10,4 +10,9 @@ public:
 	void StartupModule() override;
 	void ShutdownModule() override;
 	// End of IModuleInterface impl
+
+private:
+	/** Settings */
+	UPROPERTY()
+	class UPsPushNotificationsExtendedSettings* Settings;
 };

@@ -8,6 +8,8 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPsPushNotificationsExtended, Log, All);
 
+extern UPsPushNotificationsExtendedManager* PushNotificationsExtendedManagerInstance;
+
 UCLASS()
 class UPsPushNotificationsExtendedManager : public UObject
 {
@@ -23,41 +25,37 @@ public:
 
 	/** Requests authority for push notifications */
 	UFUNCTION(BlueprintCallable)
-	void RequestPushNotifications();
+	virtual void RequestPushNotifications();
 
 	/** Adds notifications cathegory */
 	UFUNCTION(BlueprintCallable)
-	void AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions);
+	virtual void AddNotificationCategory(const FString& Name, const TArray<FPsNotificationsAction>& Actions);
 
 	/** Sends local notifications with a specified content in a period of time in seconds
 	 @return Notification ID
 	 */
 	UFUNCTION(BlueprintCallable)
-	FString SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification);
+	virtual FString SendLocalNotificationFromNow(float SecondsFromNow, const FPsNotification& Notification);
 
 	/** Sends local notifications with a specified content at specified time
 	 @return Notification ID
 	 */
 	UFUNCTION(BlueprintCallable)
-	FString SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification);
+	virtual FString SendLocalNotification(const FDateTime& DateTime, bool bLocalTime, const FPsNotification& Notification);
 
 	/** Cleares all notifications */
 	UFUNCTION(BlueprintCallable)
-	void ClearAllLocalNotifications();
+	virtual void ClearAllLocalNotifications();
 
 	/** Removes local notification with specified ID */
 	UFUNCTION(BlueprintCallable)
-	void ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds);
+	virtual void ClearLocalNotificationsWithId(const TArray<FString>& NotificationsIds);
 
 	/** Gets last notification action id (use at start of the application to navigate user action) */
 	UFUNCTION(BlueprintCallable)
-	FString GetLastNotificationActivationCode();
+	virtual FString GetLastNotificationActivationCode();
 
 	/** Gets last notification action id (use at start of the application to navigate user action) */
 	UFUNCTION(BlueprintCallable)
-	FString GetLastNotificationActionId();
-
-	/** Clear last saved notification dictionary from the device */
-	UFUNCTION(BlueprintCallable)
-	void ClearLastNotificationData();
+	virtual FString GetLastNotificationActionId();
 };
