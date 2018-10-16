@@ -15,12 +15,7 @@
 		{
 			"Name" : "PsPushNotificationsExtended",
 			"Type" : "Runtime",
-			"LoadingPhase": "PreDefault",
-			"WhitelistPlatforms":
-			[
-				"IOS",
-				"Android"
-			]
+			"LoadingPhase": "PreDefault"
 		}
 	]
 }
