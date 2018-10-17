@@ -74,10 +74,6 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 		NSLog(@"%s init delegate", __PRETTY_FUNCTION__);
 		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		center.delegate = self;
-
-		self.currentActivationCode = [self getLastActivationCodeFromDictionary];
-		self.currentActionId = [self getLastActionIdFromDictionary];
-		[self clearNotificationDictionaryData];
 	}
 
 	return self;
@@ -85,6 +81,12 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 -(void) requestAuthorization
 {
+	// Get prev notifications info first
+	self.currentActivationCode = [self getLastActivationCodeFromDictionary];
+	self.currentActionId = [self getLastActionIdFromDictionary];
+	[self clearNotificationDictionaryData];
+
+	// Request for notifications
 	if (@available(iOS 10, *))
 	{
 		NSLog(@"%s request authorization", __PRETTY_FUNCTION__);
