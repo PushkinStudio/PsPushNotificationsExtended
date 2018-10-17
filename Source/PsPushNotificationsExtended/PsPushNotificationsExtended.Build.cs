@@ -36,13 +36,12 @@ public class PsPushNotificationsExtended : ModuleRules
 			PublicFrameworks.AddRange(
 				new string[]
 				{
-					"SystemConfiguration",
-					"UIKit",
 					"Foundation",
 					"MobileCoreServices",
 					"CFNetwork",
 					"CoreData",
-					"CoreFoundation"
+					"CoreFoundation",
+					"UserNotifications"
 				}
 			);
 
