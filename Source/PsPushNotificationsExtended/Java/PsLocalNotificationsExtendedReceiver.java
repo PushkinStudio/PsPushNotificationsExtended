@@ -197,7 +197,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			}
 			PendingIntent pendingNotificationIntent = PendingIntent.getBroadcast(context, notificationID, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-			NotificationCompat.Builder builder = new NotificationCompat.Builder(context)
+			Notification.Builder builder = new Notification.Builder(context, GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID)
 				.setSmallIcon(notificationIconID)
 				.setContentIntent(pendingNotificationIntent)
 				.setWhen(System.currentTimeMillis())
@@ -209,7 +209,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			// Setting up image
 			if (result != null)
 			{
-				builder.setStyle(new NotificationCompat.BigPictureStyle().bigPicture(result));
+				builder.setStyle(new Notification.BigPictureStyle().bigPicture(result));
 				Log.d("onReceive", "GOT URL: " + contentURL);
 			}
 
@@ -249,7 +249,6 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 				}
 			}
 
-			builder.setChannelId(GameActivity.PS_PUSH_NOTIFICATIONS_CHANNEL_ID);
 			builder.setColor(0xff0e1e43);
 
 			Notification notification = builder.build();
