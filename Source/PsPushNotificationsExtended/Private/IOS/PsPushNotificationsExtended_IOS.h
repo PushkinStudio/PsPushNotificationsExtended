@@ -18,10 +18,6 @@
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-extern NSString* PsNotificationsDataFileName;
-extern NSString* PsNotificationActionFieldName;
-extern NSString* PsNotificationaAtivationCodeFieldName;
-
 /** IOS interface for RICH user notifications */
 @interface PsPushNotificationsExtendedDelegate : NSObject <UNUserNotificationCenterDelegate>
 
@@ -37,7 +33,7 @@ extern NSString* PsNotificationaAtivationCodeFieldName;
 /** Request push notifications authorization on IOS */
 -(void) requestAuthorization;
 
--(UNNotificationAttachment*) getAttachementWithId:(NSString*) attachementId andURL:(NSString*) fileURL;
+-(UNNotificationAttachment*) getAttachmentWithId:(NSString*) attachementId andURL:(NSString*) fileURL;
 
 /** Create notifications content */
 -(UNMutableNotificationContent*) notificationContentWith: (NSString*) title andSubtitle:(NSString*) subtitle andBody:(NSString*)body andSound:(NSString*)soundName andBadge: (NSNumber*) badgeNumber andActivationCode:(NSString*) activationCode andCategory:(NSString*) category;

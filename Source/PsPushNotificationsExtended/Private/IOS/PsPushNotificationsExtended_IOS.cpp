@@ -3,6 +3,7 @@
 #include "PsPushNotificationsExtendedPrivatePCH.h"
 #include "PsPushNotificationsExtended_IOS.h"
 #include "Misc/CoreDelegates.h"
+#include "Misc/SecureHash.h"
 #include "PsPushNotificationsExtendedManager.h"
 #include "IOSAppDelegate+PsPushNotificationsExtended.h"
 
@@ -13,16 +14,9 @@
 @implementation NSString (MyAdditions)
 -(NSString*) Ps_GetMD5
 {
-	const char *cStr = [self UTF8String];
-	unsigned char result[CC_MD5_DIGEST_LENGTH];
-	CC_MD5( cStr, (int)strlen(cStr), result ); // This is the md5 call
-	return [NSString stringWithFormat:
-			@"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-			result[0], result[1], result[2], result[3],
-			result[4], result[5], result[6], result[7],
-			result[8], result[9], result[10], result[11],
-			result[12], result[13], result[14], result[15]
-			];
+	FString OriginalStr([self UTF8String]);
+	FString Md5Str = FMD5::HashAnsiString(*OriginalStr);
+	return [NSString stringWithFString: Md5Str];
 }
 @end
 
@@ -46,9 +40,9 @@
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-NSString* PsNotificationsDataFileName = @"local_notification.action";
-NSString* PsNotificationActionFieldName = @"Action";
-NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
+static NSString* PsNotificationsDataFileName = @"local_notification.tmp";
+static NSString* PsNotificationActionFieldName = @"Action";
+static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 @implementation PsPushNotificationsExtendedDelegate
 
@@ -91,7 +85,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	{
 		NSLog(@"%s request authorization", __PRETTY_FUNCTION__);
 
-		__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 		[center requestAuthorizationWithOptions:(UNAuthorizationOptionSound | UNAuthorizationOptionAlert | UNAuthorizationOptionBadge) completionHandler:^(BOOL granted, NSError * _Nullable error){
 			if(!error)
 			{
@@ -109,7 +103,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	}
 }
 
--(UNNotificationAttachment*) getAttachementWithId:(NSString*) attachementId andURL:(NSString*) fileURL
+-(UNNotificationAttachment*) getAttachmentWithId:(NSString*) attachementId andURL:(NSString*) fileURL
 {
 	NSURL *url = [NSURL URLWithString: fileURL];
 	if (!url)
@@ -191,7 +185,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			if (url)
 			{
 				NSError *localError = nil;
-				UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: imageURL];
+				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: imageURL];
 				if(attachment)
 				{
 					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
@@ -233,7 +227,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 				NSError *localError = nil;
 				UNMutableNotificationContent* Content = [self notificationContentWith: title andSubtitle: subtitle andBody: body andSound:soundName andBadge: badgeNumber andActivationCode: activationCode andCategory: category];
 
-				UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: fileURL];
+				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: fileURL];
 				if (attachment)
 				{
 					NSLog(@"%s assigning attachement", __PRETTY_FUNCTION__);
@@ -282,7 +276,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 					// Creating attachement
 					NSLog(@"%s setting up notification attachement", __PRETTY_FUNCTION__);
-					UNNotificationAttachment *attachment = [self getAttachementWithId: attachementId andURL: fileURL];
+					UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: fileURL];
 					if (!attachment)
 					{
 						NSLog(@"%s remote attachement assign error %@", __PRETTY_FUNCTION__, localError);
@@ -333,7 +327,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 -(void) registerNotificationCategories: (NSString*) categoryName andActions: (NSArray<PsActionArgIOS*>*) actions
 {
-	__block UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
 	[center getNotificationCategoriesWithCompletionHandler:^(NSSet<UNNotificationCategory *> *categories){
 		NSMutableSet* newCategories = [categories mutableCopy];
 		NSMutableArray* actionsArray = [[[NSMutableArray alloc] init] autorelease];
@@ -353,7 +347,7 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 			options: UNNotificationCategoryOptionCustomDismissAction];
 
 		[newCategories addObject: category];
-		[center setNotificationCategories: newCategories];
+		[[UNUserNotificationCenter currentNotificationCenter] setNotificationCategories: newCategories];
 	}];
 }
 
@@ -421,20 +415,20 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	NSError *localError = nil;
 
 	[[NSFileManager defaultManager] createDirectoryAtPath:tmpDirName withIntermediateDirectories:TRUE attributes:nil error: &localError];
-	if(localError)
+	if (localError)
 	{
 		NSLog(@"%s Error: %@", __PRETTY_FUNCTION__, localError);
 		return;
 	}
 
 	NSString *fileURL = [tmpDirName stringByAppendingPathComponent: PsNotificationsDataFileName];
-	NSData *data = [NSKeyedArchiver archivedDataWithRootObject: dictionaryData];
-	if (!data)
+	[dictionaryData writeToURL: [NSURL fileURLWithPath: fileURL] error: &localError];
+	if (localError)
 	{
+		NSLog(@"%s Error: %@", __PRETTY_FUNCTION__, localError);
 		return;
 	}
 
-	[data writeToFile:fileURL atomically:YES];
 	NSLog(@"%s saved: %@ to %@", __PRETTY_FUNCTION__, dictionaryData, fileURL);
 }
 
@@ -442,16 +436,16 @@ NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 {
 	NSString *tmpDirName = NSTemporaryDirectory();
 	NSString *fileURL = [tmpDirName stringByAppendingPathComponent: PsNotificationsDataFileName];
-	NSData *data = [[NSFileManager defaultManager] contentsAtPath: fileURL];
-	if (!data)
+
+	NSError *localError = nil;
+	NSDictionary *dictionary = [NSDictionary dictionaryWithContentsOfURL: [NSURL fileURLWithPath: fileURL] error: &localError];
+	if (localError)
 	{
-		NSLog(@"%s: failed!", __PRETTY_FUNCTION__);
+		NSLog(@"%s Error: %@ path: %@", __PRETTY_FUNCTION__, localError, fileURL);
 		return nil;
 	}
 
-	NSLog(@"%s: %@ from %@", __PRETTY_FUNCTION__, data, fileURL);
-
-	NSDictionary *dictionary = (NSDictionary*) [NSKeyedUnarchiver unarchiveObjectWithData:data];
+	NSLog(@"%s: %@ from %@", __PRETTY_FUNCTION__, dictionary, fileURL);
 	return dictionary;
 }
 
