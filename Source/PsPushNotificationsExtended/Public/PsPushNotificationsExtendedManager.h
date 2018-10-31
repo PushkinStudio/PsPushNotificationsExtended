@@ -8,8 +8,6 @@
 
 DECLARE_LOG_CATEGORY_EXTERN(LogPsPushNotificationsExtended, Log, All);
 
-extern UPsPushNotificationsExtendedManager* PushNotificationsExtendedManagerInstance;
-
 UCLASS()
 class UPsPushNotificationsExtendedManager : public UObject
 {
@@ -58,4 +56,8 @@ public:
 	/** Gets last notification action id (use at start of the application to navigate user action) */
 	UFUNCTION(BlueprintCallable)
 	virtual FString GetLastNotificationActionId();
+
+protected:
+	/** Instance pointer for implementations */
+	static UPsPushNotificationsExtendedManager* PushNotificationsExtendedManagerInstance;
 };

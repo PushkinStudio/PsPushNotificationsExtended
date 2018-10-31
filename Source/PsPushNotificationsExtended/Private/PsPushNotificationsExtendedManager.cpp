@@ -6,7 +6,7 @@
 
 DEFINE_LOG_CATEGORY(LogPsPushNotificationsExtended);
 
-UPsPushNotificationsExtendedManager* PushNotificationsExtendedManagerInstance = nullptr;
+UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::PushNotificationsExtendedManagerInstance = nullptr;
 
 UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::GetPsPushNotificationsExtendedManager()
 {

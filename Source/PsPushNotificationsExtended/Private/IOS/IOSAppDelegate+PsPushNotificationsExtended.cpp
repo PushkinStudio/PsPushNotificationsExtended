@@ -8,7 +8,7 @@
 #include "PsPushNotificationsExtended_IOS.h"
 #import <Foundation/Foundation.h>
 
-@implementation IOSAppDelegate (PsPushNotifications)
+@implementation IOSAppDelegate (PsPushNotificationsExtended)
 
 - (BOOL)application:(UIApplication *)application
 willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
