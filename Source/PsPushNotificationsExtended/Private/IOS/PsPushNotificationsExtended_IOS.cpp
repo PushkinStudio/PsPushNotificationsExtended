@@ -184,9 +184,12 @@ static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 			if (url)
 			{
-				NSError *localError = nil;
-				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: imageURL];
-				if(attachment)
+				NSString* localResourcePath = [[NSBundle mainBundle] pathForResource: [imageURL stringByDeletingPathExtension] ofType: [imageURL pathExtension]];
+
+				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: localResourcePath];
+
+				NSLog(@"%s local resource attempt: %@ (%@) of type (%@)", __PRETTY_FUNCTION__, localResourcePath, [imageURL stringByDeletingPathExtension], [imageURL pathExtension]);
+				if (attachment)
 				{
 					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
 					NSLog(@"%s local attachement assign", __PRETTY_FUNCTION__);
