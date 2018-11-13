@@ -14,11 +14,8 @@ class UPsPushNotificationsExtendedManager : public UObject
 	GENERATED_UCLASS_BODY()
 
 public:
-	/** Get instance with more specific function name for BP */
-	UFUNCTION(BlueprintCallable)
-	static UPsPushNotificationsExtendedManager* GetPsPushNotificationsExtendedManager();
-
 	/** Get instance of the manager */
+	UFUNCTION(BlueprintPure, meta=(DisplayName = "Get Ps Push Notifications Extended Manager"))
 	static UPsPushNotificationsExtendedManager* GetInstance();
 
 	/** Requests authority for push notifications */

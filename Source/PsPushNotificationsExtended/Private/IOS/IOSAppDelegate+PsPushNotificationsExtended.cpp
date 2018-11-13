@@ -7,6 +7,7 @@
 #include "IOSAppDelegate+PsPushNotificationsExtended.h"
 #include "PsPushNotificationsExtended_IOS.h"
 #import <Foundation/Foundation.h>
+#import <UserNotifications/UserNotifications.h>
 
 @implementation IOSAppDelegate (PsPushNotificationsExtended)
 
@@ -18,7 +19,9 @@ willFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 	self.bDeviceInPortraitMode = false;
 
 	// Creating delegate early to earn push actions
-	[PsPushNotificationsExtendedDelegate sharedInstance];
+	PsPushNotificationsExtendedDelegate* notificationsDelegate = [PsPushNotificationsExtendedDelegate sharedInstance];
+	UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
+	center.delegate = notificationsDelegate;
 
 	return YES;
 }

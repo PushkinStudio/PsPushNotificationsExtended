@@ -54,6 +54,10 @@
 			import android.util.Log;
 			import android.app.NotificationManager;
 			import android.app.NotificationChannel;
+
+			import android.graphics.Bitmap;
+			import android.graphics.BitmapFactory;
+			import java.io.FileOutputStream;
 		</insert>
 	</gameActivityImportAdditions>
 
@@ -128,7 +132,7 @@
 				}
 			}
 
-			public String PsPushNotificationsExtended_LocalNotificationScheduleAtTime(String targetDateTime, boolean localTime, String title, String body, String action, String activationEvent, String categoryId, String contentURL)
+			public String PsPushNotificationsExtended_LocalNotificationScheduleAtTime(String targetDateTime, boolean localTime, String title, String body, String action, String activationEvent, String categoryId, String contentURL, boolean bLocalContent, byte[] localImageData)
 			{
 				int notificationID = LocalNotificationGetID();
 
@@ -142,6 +146,31 @@
 				notificationIntent.putExtra("local-notification-action", action);
 				notificationIntent.putExtra("local-notification-activationEvent", activationEvent);
 				notificationIntent.putExtra("local-notification-contentURL", contentURL);
+				notificationIntent.putExtra("local-notification-localContent", bLocalContent);
+
+				if (bLocalContent)
+				{
+					File outputDir = getCacheDir();
+					String absFilePath = outputDir.getAbsolutePath() + "/" + contentURL;
+					File file = new File(absFilePath);
+					if (!file.exists())
+					{
+						Bitmap bmp = BitmapFactory.decodeByteArray(localImageData, 0, localImageData.length);
+						try (FileOutputStream out = new FileOutputStream(absFilePath))
+						{
+							bmp.compress(Bitmap.CompressFormat.PNG, 90, out); // bmp is your Bitmap instance
+							Log.debug("PsPushNotificationsExtended::LocalNotificationsScheduleAtTime saved local file: " + absFilePath);
+						}
+						catch (Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+					else
+					{
+						Log.debug("PsPushNotificationsExtended::LocalNotificationsScheduleAtTime local file already exists: " + absFilePath);
+					}
+				}
 
 				if (PsPushCategoriesMap != null)
 				{

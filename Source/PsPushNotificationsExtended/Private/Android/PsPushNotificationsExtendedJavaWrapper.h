@@ -24,7 +24,7 @@ public:
 	/** Initialize notifications channel */
 	static void Init();
 	/** Schedule local notification */
-	static FString LocalNotificationScheduleAtTime(const FDateTime& DateTime, bool bIsLocalTime, const FString& Title, const FString& Body, const FString& ActivationEvent, const FString& Category, const FString& ContentURL);
+	static FString LocalNotificationScheduleAtTime(const FDateTime& DateTime, bool bIsLocalTime, const FString& Title, const FString& Body, const FString& ActivationEvent, const FString& Category, const FString& ContentURL, bool bLocalContent);
 	/** Add category for notification */
 	static void LocalNotificationAddCategory(const FString& CategoryId, const TArray<FPsNotificationsAction>& Actions);
 	/** Clear notifications by id on android */

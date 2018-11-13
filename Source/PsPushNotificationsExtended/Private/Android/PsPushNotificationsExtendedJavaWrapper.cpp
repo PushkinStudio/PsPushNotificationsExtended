@@ -4,6 +4,8 @@
 #include "Android/PsPushNotificationsExtendedJavaWrapper.h"
 #include "PsPushNotificationsExtendedManager.h"
 #include "PsPushNotificationsExtendedSettings.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
 
 #include "Runtime/Launch/Public/Android/AndroidJNI.h"
 #include "AndroidApplication.h"
@@ -20,7 +22,7 @@ void FPsPushNotificationsExtendedJavaWrapper::Init()
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_Init = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_Init", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
 
 		// Find send local notifications method
-		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationScheduleAtTime = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationScheduleAtTime", "(Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;", false);
+		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationScheduleAtTime = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationScheduleAtTime", "(Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Z[B)Ljava/lang/String;", false);
 
 		// Find add category method
 		FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationAddActionToCategory = FJavaWrapper::FindMethod(Env, FJavaWrapper::GameActivityClassID, "PsPushNotificationsExtended_LocalNotificationAddCategory", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
@@ -53,7 +55,7 @@ void FPsPushNotificationsExtendedJavaWrapper::Init()
 	}
 }
 
-FString FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(const FDateTime& DateTime, bool bIsLocalTime, const FString& Title, const FString& Body, const FString& ActivationEvent, const FString& Category, const FString& ContentURL)
+FString FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(const FDateTime& DateTime, bool bIsLocalTime, const FString& Title, const FString& Body, const FString& ActivationEvent, const FString& Category, const FString& ContentURL, bool bLocalContent)
 {
 	FString NotificationId;
 	if (JNIEnv* Env = FAndroidApplication::GetJavaEnv(true))
@@ -67,9 +69,25 @@ FString FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime
 		jstring JAction = Env->NewStringUTF(TCHAR_TO_UTF8(*ActionStr));
 		jstring JActivationEvent = Env->NewStringUTF(TCHAR_TO_UTF8(*ActivationEvent));
 		jstring JCategory = Env->NewStringUTF(TCHAR_TO_UTF8(*Category));
+		jbyteArray JImageData = Env->NewByteArray(0);;
+
+		if (bLocalContent)
+		{
+			TArray<uint8> ImageFileData;
+			IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+			EImageFormat Format = EImageFormat::Invalid;
+			if (FFileHelper::LoadFileToArray(ImageFileData, *ContentURL))
+			{
+				Env->DeleteLocalRef(JImageData);
+				JImageData = Env->NewByteArray(ImageFileData.Num());
+				Env->SetByteArrayRegion(JImageData, 0, ImageFileData.Num(), reinterpret_cast<const jbyte *>(ImageFileData.GetData()));
+					const_cast<FString&>(ContentURL).ReplaceInline(TEXT("/"), TEXT("."), ESearchCase::IgnoreCase);
+			}
+		}
+
 		jstring JContentURL = Env->NewStringUTF(TCHAR_TO_UTF8(*ContentURL));
 
-		jstring JNotificationId = (jstring)FJavaWrapper::CallObjectMethod(Env, FJavaWrapper::GameActivityThis, FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationScheduleAtTime, JFireDateTime, bIsLocalTime, JTitle, JBody, JAction, JActivationEvent, JCategory, JContentURL);
+		jstring JNotificationId = (jstring)FJavaWrapper::CallObjectMethod(Env, FJavaWrapper::GameActivityThis, FPsPushNotificationsExtendedJavaWrapper::PsPushNotificationsExtended_LocalNotificationScheduleAtTime, JFireDateTime, bIsLocalTime, JTitle, JBody, JAction, JActivationEvent, JCategory, JContentURL, bLocalContent, JImageData);
 
 		if (JNotificationId)
 		{
@@ -84,7 +102,11 @@ FString FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime
 		Env->DeleteLocalRef(JFireDateTime);
 		Env->DeleteLocalRef(JTitle);
 		Env->DeleteLocalRef(JBody);
+		Env->DeleteLocalRef(JAction);
 		Env->DeleteLocalRef(JActivationEvent);
+		Env->DeleteLocalRef(JCategory);
+		Env->DeleteLocalRef(JContentURL);
+		Env->DeleteLocalRef(JImageData);
 	}
 
 	return NotificationId;
