@@ -3,15 +3,11 @@
 #include "PsPushNotificationsExtendedPrivatePCH.h"
 #include "PsPushNotificationsExtendedManager.h"
 #include "PsPushNotificationsExtendedTypes.h"
+#include "Misc/Paths.h"
 
 DEFINE_LOG_CATEGORY(LogPsPushNotificationsExtended);
 
 UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::PushNotificationsExtendedManagerInstance = nullptr;
-
-UPsPushNotificationsExtendedManager* UPsPushNotificationsExtendedManager::GetPsPushNotificationsExtendedManager()
-{
-	return UPsPushNotificationsExtendedManager::GetInstance();
-}
 
 UPsPushNotificationsExtendedManager::UPsPushNotificationsExtendedManager(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

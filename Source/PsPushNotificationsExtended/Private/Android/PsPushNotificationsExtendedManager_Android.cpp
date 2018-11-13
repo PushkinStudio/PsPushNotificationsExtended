@@ -49,7 +49,7 @@ FString UPsPushNotificationsExtendedManagerAndroid::SendLocalNotification(const 
 {
 	UE_LOG(LogPsPushNotificationsExtended, Log, TEXT("%s called"), *PS_PUSH_FUNC_LINE);
 
-	FString PushIdStr = FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), Notification.ActivationCode, Notification.Category, Notification.ContentURL);
+	FString PushIdStr = FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime(DateTime, bLocalTime, Notification.Title.ToString(), Notification.Body.ToString(), Notification.ActivationCode, Notification.Category, Notification.ContentURL, Notification.bLocalContent);
 	return PushIdStr;
 }
 

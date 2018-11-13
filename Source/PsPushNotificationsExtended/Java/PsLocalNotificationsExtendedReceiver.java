@@ -19,6 +19,8 @@ import java.security.MessageDigest;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 
 public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 {
@@ -30,6 +32,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 		String action = intent.getStringExtra("local-notification-action");
 		String activationEvent = intent.getStringExtra("local-notification-activationEvent");
 		String contentURL = intent.getStringExtra("local-notification-contentURL");
+		boolean localContent = intent.getBooleanExtra("local-notification-localContent", false);
 
 		Log.d("onReceive", "NOID: " + notificationID);
 
@@ -55,7 +58,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			buttonsContext += actionTitle + "=" + actionId + "|";
 		}
 
-		new sendNotification(context).execute(String.valueOf(notificationID), title, details, action, activationEvent, contentURL, buttonsContext);
+		new sendNotification(context).execute(String.valueOf(notificationID), title, details, action, activationEvent, contentURL, buttonsContext, localContent ? "Y" : "N");
 	}
 
 	private class sendNotification extends AsyncTask<String, Void, Bitmap>
@@ -68,6 +71,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 		String activationEvent;
 		String contentURL;
 		String buttonsContext;
+		boolean localContent;
 
 		public sendNotification(Context context)
 		{
@@ -117,13 +121,24 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			activationEvent = params[4];
 			contentURL = params[5];
 			buttonsContext = params[6];
+			localContent = params[7] == "Y" ? true : false;
 
 			if (contentURL == null || contentURL.length() == 0)
 			{
 				return null;
 			}
 
-			String md5 = getMD5(contentURL);
+			String md5 = null;
+			if (localContent)
+			{
+				// local file saved with its original name with "/" replaced in PsPushNotificationsExtended_LocalNotificationScheduleAtTime
+				md5 = contentURL;
+			}
+			else
+			{
+				md5 = getMD5(contentURL);;
+			}
+
 			if (md5 == null || md5.length() == 0)
 			{
 				return null;
@@ -134,7 +149,7 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 			Log.d("onReceive", "Cached file name: " + absFilePath);
 
 			File file = new File(absFilePath);
-			if(file.exists())
+			if (file.exists())
 			{
 				try
 				{
@@ -147,6 +162,10 @@ public class PsLocalNotificationsExtendedReceiver extends BroadcastReceiver
 				{
 					Log.d("onReceive", "Cached file not found: " + absFilePath);
 				}
+			}
+			else if (localContent)
+			{
+				return null;
 			}
 
 			try

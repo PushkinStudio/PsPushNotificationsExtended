@@ -66,8 +66,8 @@ static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	if (self)
 	{
 		NSLog(@"%s init delegate", __PRETTY_FUNCTION__);
-		UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
-		center.delegate = self;
+		self.currentActivationCode = @"";
+		self.currentActionId = @"";
 	}
 
 	return self;
@@ -184,12 +184,13 @@ static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 
 			if (url)
 			{
-				NSError *localError = nil;
-				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: imageURL];
+				NSString *localFilePath = [[NSBundle mainBundle] pathForResource: [[imageURL lastPathComponent] stringByDeletingPathExtension] ofType: [imageURL pathExtension] inDirectory: [NSString stringWithFormat: @"%@/%@", @"cookeddata", [imageURL stringByDeletingLastPathComponent]]];
+				UNNotificationAttachment *attachment = [self getAttachmentWithId: attachementId andURL: localFilePath];
+				NSLog(@"%s local attachement assign: %@ (%@) (%@)", __PRETTY_FUNCTION__, localFilePath, [imageURL stringByDeletingPathExtension], [imageURL pathExtension]);
 				if(attachment)
 				{
 					Content.attachments = [NSArray arrayWithObjects: attachment, nil];
-					NSLog(@"%s local attachement assign", __PRETTY_FUNCTION__);
+					NSLog(@"%s local attachement assign success", __PRETTY_FUNCTION__);
 				}
 			}
 
@@ -390,7 +391,7 @@ static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	NSDictionary* dict = [self loadDictionaryFromTemporaryFile];
 	if (!dict)
 	{
-		return nil;
+		return @"";
 	}
 
 	NSString* acticationCodeStr = (NSString*)dict[PsNotificationaAtivationCodeFieldName];
@@ -402,7 +403,7 @@ static NSString* PsNotificationaAtivationCodeFieldName = @"ActivationCode";
 	NSDictionary* dict = [self loadDictionaryFromTemporaryFile];
 	if (!dict)
 	{
-		return nil;
+		return @"";
 	}
 
 	NSString* actionIdStr = (NSString*)dict[PsNotificationActionFieldName];
