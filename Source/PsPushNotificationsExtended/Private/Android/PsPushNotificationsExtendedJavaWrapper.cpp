@@ -69,13 +69,12 @@ FString FPsPushNotificationsExtendedJavaWrapper::LocalNotificationScheduleAtTime
 		jstring JAction = Env->NewStringUTF(TCHAR_TO_UTF8(*ActionStr));
 		jstring JActivationEvent = Env->NewStringUTF(TCHAR_TO_UTF8(*ActivationEvent));
 		jstring JCategory = Env->NewStringUTF(TCHAR_TO_UTF8(*Category));
-		jbyteArray JImageData = Env->NewByteArray(0);;
+		jbyteArray JImageData = Env->NewByteArray(0);
 
 		if (bLocalContent)
 		{
 			TArray<uint8> ImageFileData;
 			IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-			EImageFormat Format = EImageFormat::Invalid;
 			if (FFileHelper::LoadFileToArray(ImageFileData, *ContentURL))
 			{
 				Env->DeleteLocalRef(JImageData);
